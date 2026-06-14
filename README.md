@@ -14,69 +14,73 @@
 
 ## 快速开始
 
-### 1. 安装插件
+### 第一步：安装插件
 
-#### 方式一：通过 ClawHub 插件市场安装（推荐）
+#### 方式一：Git 克隆 + 本地安装（推荐）
+
+适用于远程服务器或网络受限环境：
 
 ```bash
-# 从 ClawHub 市场安装（支持远程同步更新）
-openclaw plugins install clawhub:@z-qinghui/migpt-claw
+# 1. 克隆仓库到 OpenClaw 插件目录
+git clone https://github.com/z-qinghui/migpt-claw.git ~/.openclaw/plugins/migpt-claw
+
+# 2. 从本地路径安装（--link 模式，后续更新只需 git pull）
+openclaw plugins install ~/.openclaw/plugins/migpt-claw --link
 ```
 
-#### 方式二：通过 npm 安装
+#### 方式二：通过 Git 直接安装
+
+适用于本地机器且网络畅通：
 
 ```bash
-# 从 npm 注册表安装
+openclaw plugins install "git:github.com/z-qinghui/migpt-claw@main"
+```
+
+#### 方式三：通过 npm 安装
+
+```bash
 openclaw plugins install npm:@z-qinghui/migpt-claw
 ```
 
-#### 方式三：通过 Git 安装
+#### 方式四：通过 ClawHub 插件市场安装
 
 ```bash
-# 从 Git 仓库安装（指定分支或标签）
-openclaw plugins install git:github.com/z-qinghui/migpt-claw@main
+openclaw plugins install clawhub:@z-qinghui/migpt-claw
 ```
 
-#### 方式四：本地安装（开发模式）
+#### 方式五：通过 tgz 包安装
 
 ```bash
-# 从本地目录安装（支持热更新，适合开发调试）
-openclaw plugins install ./migpt-claw --link
+# 下载 tgz 包后安装
+openclaw plugins install migpt-claw-1.0.0.tgz
 ```
 
-### 更新插件
+### 第二步：配置账号
 
-```bash
-# 更新到最新版本
-openclaw plugins update migpt-claw
-
-# 查看已安装插件列表
-openclaw plugins list --enabled --verbose
-```
-
-### 2. 配置账号
-
-编辑 `~/.openclaw/openclaw.json` 配置文件：
-
-**推荐配置（密码 + passToken）**：
+编辑 `~/.openclaw/openclaw.json`，在 `channels` 中添加 migpt 配置：
 
 ```json
 {
   "channels": {
     "migpt": {
       "enabled": true,
-      "userId": "123456789",
-      "password": "your_password",
-      "passToken": "your_pass_token",
+      "userId": "你的小米ID",
+      "password": "你的密码",
+      "passToken": "你的passToken",
       "devices": ["客厅音箱"],
       "announceOnStart": true,
       "startupMessage": "您的小龙虾已上线，随时为您服务",
       "acknowledgeOnReceive": true,
       "receiveMessage": "收到，处理中",
+      "speakerControl": "mina",
       "keepAlive": true,
       "keepAliveTimeout": 30,
+      "keepAliveEnterKeywords": ["打开连续对话", "进入持续对话"],
+      "keepAliveExitKeywords": ["关闭连续对话", "退出持续对话", "再见"],
       "mimo": {
-        "apiKey": "your-mimo-api-key",
+        "apiKey": "你的MiMo API Key",
+        "baseUrl": "https://api.xiaomimimo.com/v1",
+        "model": "mimo-v2.5-tts",
         "voice": "冰糖",
         "style": "温柔活泼"
       }
@@ -85,60 +89,71 @@ openclaw plugins list --enabled --verbose
 }
 ```
 
-**配置说明**：
+**必填字段**：
 
-- `userId`：小米 ID（数字，在小米账号「个人信息」-「小米 ID」查看）
-- `password`：小米账号密码
-- `passToken`：登录辅助凭证，避免验证码（推荐配置）
-- `devices`：小爱音箱设备名称列表
-- `announceOnStart`：启动时是否播报上线文案
-- `startupMessage`：上线播报文案
-- `acknowledgeOnReceive`：收到消息时是否回复提示
-- `receiveMessage`：收到消息回复文案
-- `speakerControl`：音箱控制方式（`mina` 或 `miot`，默认 `mina`）
-- `keepAlive`：是否默认开启持续对话模式（默认 `false`）
-- `keepAliveTimeout`：持续对话超时秒数，超时自动退出（默认 `30`）
-- `keepAliveEnterKeywords`：进入持续对话的语音关键词
-- `keepAliveExitKeywords`：退出持续对话的语音关键词
-- `mimo`：MiMo-V2.5-TT 自定义 TTS 配置（见下方）
+| 字段 | 说明 | 获取方式 |
+| --- | --- | --- |
+| `userId` | 小米 ID（数字） | 小米账号「个人信息」-「小米 ID」 |
+| `password` | 小米账号密码 | - |
+| `passToken` | 登录辅助凭证（推荐） | 浏览器抓取小米登录 Cookie |
+| `devices` | 音箱设备名称列表 | 米家 App 中的设备名称，**必须完全一致** |
 
-### 音箱控制方式说明
+**可选字段**：
 
-**`speakerControl`**：指定与小爱音箱通信的控制方式
+| 字段 | 说明 | 默认值 |
+| --- | --- | --- |
+| `speakerControl` | 音箱控制方式 | `mina` |
+| `announceOnStart` | 启动时播报上线文案 | `false` |
+| `startupMessage` | 上线播报文案 | `您的小龙虾已上线，随时为您服务` |
+| `acknowledgeOnReceive` | 收到消息时回复提示 | `false` |
+| `receiveMessage` | 收到消息回复文案 | `收到，处理中` |
+| `keepAlive` | 默认开启持续对话 | `false` |
+| `keepAliveTimeout` | 持续对话超时秒数 | `30` |
+| `keepAliveEnterKeywords` | 进入持续对话关键词 | `["打开连续对话", "进入持续对话"]` |
+| `keepAliveExitKeywords` | 退出持续对话关键词 | `["关闭连续对话", "退出持续对话", "再见"]` |
+| `mimo` | MiMo TTS 配置 | 不配置则使用小米原生 TTS |
 
-- **`mina`**（默认）：使用 MiNA API，适用于大多数小爱音箱型号
-- **`miot`**：使用 MIoT API，适用于部分需要特殊控制的型号
+### 第三步：启动服务
 
-**已知需要 `miot` 的型号**：
-
-- LX04（小爱音箱 Pro）
-- X10A（小爱音箱 X10）
-- L05B / L05C（小爱音箱 Play 增强版）
-
-**注意**：
-
-- 不同型号的小爱音箱对 `mina` 和 `miot` 的支持情况可能不同
-- 如果默认 `mina` 方式无法正常工作，请尝试切换为 `miot`
-- 完整兼容性列表参考：[MiGPT 兼容性文档](https://github.com/idootop/mi-gpt/blob/main/docs/compatibility.md)
-- 建议自行编译测试以确定您的设备最佳配置
-
-**特别说明**：当前项目未对所有小爱音箱型号进行全面测试，以上型号支持情况仅供参考。由于小爱音箱型号众多，不同型号可能存在差异，建议用户根据自身设备型号自行编译测试。
-
-**配置示例**：
-
-```json
-{
-  "channels": {
-    "migpt": {
-      "userId": "123456789",
-      "password": "your_password",
-      "passToken": "your_pass_token",
-      "devices": ["客厅音箱"],
-      "speakerControl": "miot"
-    }
-  }
-}
+```bash
+openclaw gateway restart
 ```
+
+### 第四步：验证
+
+```bash
+# 查看插件状态
+openclaw plugins list --enabled --verbose
+
+# 查看网关运行状态
+openclaw gateway status --deep
+
+# 如有问题，运行诊断
+openclaw doctor
+```
+
+### 更新插件
+
+```bash
+# 方式一：Git 安装的插件（--link 模式）
+cd ~/.openclaw/plugins/migpt-claw && git pull
+openclaw gateway restart
+
+# 方式二：npm/ClawHub 安装的插件
+openclaw plugins update migpt-claw
+openclaw gateway restart
+```
+
+### 音箱控制方式
+
+`speakerControl` 指定与小爱音箱通信的控制方式：
+
+- **`mina`**（默认）：使用 MiNA API，适用于大多数型号
+- **`miot`**：使用 MIoT API，适用于部分特殊型号
+
+**已知需要 `miot` 的型号**：LX04（小爱音箱 Pro）、X10A（小爱音箱 X10）、L05B/L05C（小爱音箱 Play 增强版）
+
+如果默认 `mina` 无法正常工作，请尝试切换为 `miot`。完整兼容性参考 [MiGPT 兼容性文档](https://github.com/idootop/mi-gpt/blob/main/docs/compatibility.md)。
 
 ### 持续对话
 
@@ -175,6 +190,7 @@ openclaw plugins list --enabled --verbose
     "migpt": {
       "mimo": {
         "apiKey": "your-mimo-api-key",
+        "baseUrl": "https://api.xiaomimimo.com/v1",
         "model": "mimo-v2.5-tts",
         "voice": "冰糖",
         "style": "温柔活泼"
@@ -189,6 +205,7 @@ openclaw plugins list --enabled --verbose
 | 字段 | 说明 | 默认值 |
 | --- | --- | --- |
 | `apiKey` | MiMo API Key（必填） | - |
+| `baseUrl` | MiMo API 地址 | `https://api.xiaomimimo.com/v1` |
 | `model` | TTS 模型 | `mimo-v2.5-tts` |
 | `voice` | 预设音色 ID | `mimo_default` |
 | `style` | 风格指令 | - |
@@ -217,12 +234,6 @@ openclaw plugins list --enabled --verbose
 - **硬件控制**（开关灯、调节亮度、风扇/空调/加湿器等）→ 由小爱原生处理
 
 无需额外配置，基于小米 API 返回的消息类型自动判断。
-
-### 3. 启动服务
-
-```bash
-openclaw gateway restart
-```
 
 ## 设备名称
 
@@ -323,9 +334,15 @@ migpt-claw/
 # 安装依赖
 npm install
 
+# 开发模式（监听文件变化自动构建）
+npm run dev
+
 # 构建
 npm run build
 
+# 本地测试安装
+openclaw plugins install . --link
+openclaw gateway restart
 ```
 
 ## 相关项目
