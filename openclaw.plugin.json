@@ -1,9 +1,19 @@
 {
   "id": "migpt-claw",
   "name": "MiGPT Channel",
-  "description": "小米小爱音箱 OpenClaw Channel 插件",
+  "description": "小米小爱音箱 OpenClaw Channel 插件，让小爱音箱成为你的龙虾语音助手",
+  "version": "1.0.0",
+  "kind": "channel",
   "channels": ["migpt"],
   "skills": ["./skills/migpt-volume"],
+  "author": {
+    "name": "z-qinghui",
+    "url": "https://github.com/z-qinghui"
+  },
+  "homepage": "https://github.com/z-qinghui/migpt-claw",
+  "repository": "https://github.com/z-qinghui/migpt-claw",
+  "license": "MIT",
+  "keywords": ["xiaomi", "mi-gpt", "mico", "speaker", "channel", "voice"],
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
@@ -58,6 +68,54 @@
         "type": "string",
         "description": "收到消息回复文案",
         "default": "收到，处理中"
+      },
+      "keepAlive": {
+        "type": "boolean",
+        "description": "是否默认开启持续对话模式（一次唤醒，连续对话）",
+        "default": false
+      },
+      "keepAliveTimeout": {
+        "type": "number",
+        "description": "持续对话超时时间（秒），超时后自动退出持续对话",
+        "default": 30
+      },
+      "keepAliveEnterKeywords": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "进入持续对话的语音关键词",
+        "default": ["打开连续对话", "进入持续对话"]
+      },
+      "keepAliveExitKeywords": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "退出持续对话的语音关键词",
+        "default": ["关闭连续对话", "退出持续对话", "再见"]
+      },
+      "mimo": {
+        "type": "object",
+        "description": "MiMo-V2.5-TT 自定义 TTS 配置",
+        "properties": {
+          "apiKey": {
+            "type": "string",
+            "description": "MiMo API Key"
+          },
+          "model": {
+            "type": "string",
+            "description": "TTS 模型",
+            "enum": ["mimo-v2.5-tts", "mimo-v2.5-tts-voicedesign", "mimo-v2.5-tts-voiceclone"],
+            "default": "mimo-v2.5-tts"
+          },
+          "voice": {
+            "type": "string",
+            "description": "预设音色 ID（如 mimo_default, 冰糖, 茉莉, 苏打, 白桦, Mia, Chloe）",
+            "default": "mimo_default"
+          },
+          "style": {
+            "type": "string",
+            "description": "风格指令（如 温柔, 活泼, 磁性, 甜美 等）"
+          }
+        },
+        "required": ["apiKey"]
       }
     }
   },
@@ -107,6 +165,186 @@
     "receiveMessage": {
       "label": "回复文案",
       "placeholder": "收到，处理中"
+    },
+    "keepAlive": {
+      "label": "持续对话",
+      "description": "启用后，一次唤醒可连续对话，无需重复唤醒"
+    },
+    "keepAliveTimeout": {
+      "label": "持续对话超时",
+      "placeholder": "30"
+    },
+    "keepAliveEnterKeywords": {
+      "label": "进入持续对话关键词",
+      "placeholder": "打开连续对话，进入持续对话"
+    },
+    "keepAliveExitKeywords": {
+      "label": "退出持续对话关键词",
+      "placeholder": "关闭连续对话，退出持续对话，再见"
+    },
+    "mimo": {
+      "label": "MiMo TTS",
+      "description": "小米 MiMo-V2.5-TT 自定义语音合成配置"
+    }
+  },
+  "channelConfigs": {
+    "migpt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "小米账号 ID"
+        },
+        "password": {
+          "type": "string",
+          "description": "小米账号密码"
+        },
+        "passToken": {
+          "type": "string",
+          "description": "小米 PassToken（可选，如果提供则不需要密码）"
+        },
+        "devices": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "设备名称列表"
+        },
+        "systemPrompt": {
+          "type": "string",
+          "description": "系统提示词，用于定制 AI 在音箱场景下的行为规范"
+        },
+        "heartbeat": {
+          "type": "number",
+          "description": "消息轮询间隔（毫秒）",
+          "default": 1000
+        },
+        "speakerControl": {
+          "type": "string",
+          "enum": ["mina", "miot"],
+          "description": "音箱控制方式"
+        },
+        "announceOnStart": {
+          "type": "boolean",
+          "description": "启动时是否播报上线文案",
+          "default": false
+        },
+        "startupMessage": {
+          "type": "string",
+          "description": "上线播报文案",
+          "default": "您的小龙虾已上线，随时为您服务"
+        },
+        "acknowledgeOnReceive": {
+          "type": "boolean",
+          "description": "收到消息时是否回复收到",
+          "default": false
+        },
+        "receiveMessage": {
+          "type": "string",
+          "description": "收到消息回复文案",
+          "default": "收到，处理中"
+        },
+        "keepAlive": {
+          "type": "boolean",
+          "description": "是否默认开启持续对话模式",
+          "default": false
+        },
+        "keepAliveTimeout": {
+          "type": "number",
+          "description": "持续对话超时时间（秒）",
+          "default": 30
+        },
+        "keepAliveEnterKeywords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "进入持续对话的语音关键词",
+          "default": ["打开连续对话", "进入持续对话"]
+        },
+        "keepAliveExitKeywords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "退出持续对话的语音关键词",
+          "default": ["关闭连续对话", "退出持续对话", "再见"]
+        },
+        "mimo": {
+          "type": "object",
+          "description": "MiMo-V2.5-TT 自定义 TTS 配置",
+          "properties": {
+            "apiKey": { "type": "string", "description": "MiMo API Key" },
+            "model": { "type": "string", "enum": ["mimo-v2.5-tts", "mimo-v2.5-tts-voicedesign", "mimo-v2.5-tts-voiceclone"], "default": "mimo-v2.5-tts" },
+            "voice": { "type": "string", "description": "预设音色 ID", "default": "mimo_default" },
+            "style": { "type": "string", "description": "风格指令" }
+          },
+          "required": ["apiKey"]
+        }
+      },
+      "uiHints": {
+        "userId": {
+          "label": "小米账号 ID",
+          "placeholder": "请输入小米账号"
+        },
+        "password": {
+          "label": "密码",
+          "sensitive": true,
+          "placeholder": "请输入小米账号密码"
+        },
+        "passToken": {
+          "label": "PassToken",
+          "sensitive": true,
+          "placeholder": "可选，如果提供则不需要密码"
+        },
+        "devices": {
+          "label": "设备列表",
+          "placeholder": "客厅音箱，卧室音箱"
+        },
+        "systemPrompt": {
+          "label": "系统提示词",
+          "placeholder": "自定义 AI 在音箱场景下的行为规范"
+        },
+        "heartbeat": {
+          "label": "轮询间隔",
+          "placeholder": "1000"
+        },
+        "speakerControl": {
+          "label": "控制方式",
+          "placeholder": "mina 或 miot"
+        },
+        "announceOnStart": {
+          "label": "启动时播报",
+          "description": "启用后，音箱启动时会播报上线文案"
+        },
+        "startupMessage": {
+          "label": "上线文案",
+          "placeholder": "您的小龙虾已上线，随时为您服务"
+        },
+        "acknowledgeOnReceive": {
+          "label": "收到消息回复",
+          "description": "启用后，收到消息时会播放提示音"
+        },
+        "receiveMessage": {
+          "label": "回复文案",
+          "placeholder": "收到，处理中"
+        },
+        "keepAlive": {
+          "label": "持续对话",
+          "description": "启用后，一次唤醒可连续对话"
+        },
+        "keepAliveTimeout": {
+          "label": "持续对话超时",
+          "placeholder": "30"
+        },
+        "keepAliveEnterKeywords": {
+          "label": "进入持续对话关键词",
+          "placeholder": "打开连续对话，进入持续对话"
+        },
+        "keepAliveExitKeywords": {
+          "label": "退出持续对话关键词",
+          "placeholder": "关闭连续对话，退出持续对话，再见"
+        },
+        "mimo": {
+          "label": "MiMo TTS",
+          "description": "小米 MiMo-V2.5-TT 自定义语音合成配置"
+        }
+      }
     }
   }
 }

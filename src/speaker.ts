@@ -1,4 +1,5 @@
 import { MiService } from './service.js';
+import type { MiMoTTS } from './tts/mimo.js';
 
 export interface IPlayOptions {
   text?: string;
@@ -11,8 +12,19 @@ export interface IPlayResult {
 }
 
 class _MiSpeaker {
+  /** MiMo TTS 实例（延迟注入） */
+  private _mimoTTS: MiMoTTS | null = null;
+
+  /**
+   * 注入 MiMo TTS 提供者
+   */
+  setMiMoTTS(tts: MiMoTTS) {
+    this._mimoTTS = tts;
+  }
+
   /**
    * 播放文字、音频链接
+   * 优先使用 MiMo TTS（如果已配置），否则回退到小米原生 TTS
    */
   async play(options: IPlayOptions): Promise<IPlayResult> {
     const { text, url } = options;
@@ -30,8 +42,21 @@ class _MiSpeaker {
         }
         result = await MiService.MiNA.play({ url });
       } else if (text) {
-        // 文字播报使用配置的播放方式
-        result = await MiService.play(text);
+        // 优先使用 MiMo TTS
+        if (this._mimoTTS) {
+          const ttsResult = await this._mimoTTS.synthesize(text);
+          if (ttsResult.success && ttsResult.url) {
+            // MiMo 生成的音频需要先退出小爱监听状态，防止音频被误识别为语音指令
+            await this._suppressBeforeCustomTTS();
+            result = await MiService.MiNA!.play({ url: ttsResult.url });
+          } else {
+            console.warn('⚠️ MiMo TTS 失败，回退到原生 TTS:', ttsResult.error);
+            result = await MiService.play(text);
+          }
+        } else {
+          // 文字播报使用配置的播放方式
+          result = await MiService.play(text);
+        }
       } else {
         return { success: false, error: 'text or url is required' };
       }
@@ -43,6 +68,16 @@ class _MiSpeaker {
       }
     } catch (err: any) {
       return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * 自定义 TTS 播放前的抑制处理
+   * 暂停当前播放，防止小爱将 TTS 音频误识别为用户语音指令
+   */
+  private async _suppressBeforeCustomTTS() {
+    if (MiService.MiNA) {
+      await MiService.MiNA.pause().catch(() => {});
     }
   }
 

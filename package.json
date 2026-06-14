@@ -19,6 +19,7 @@
     "dist",
     "src",
     "index.ts",
+    "setup-entry.ts",
     "skills",
     "openclaw.plugin.json",
     "tsconfig.json"
@@ -36,7 +37,41 @@
   "openclaw": {
     "extensions": [
       "./index.ts"
-    ]
+    ],
+    "setupEntry": "./setup-entry.ts",
+    "channel": {
+      "id": "migpt",
+      "label": "MiGPT",
+      "selectionLabel": "小米音箱 (MiGPT)",
+      "blurb": "小米小爱音箱语音对话，让小爱音箱成为你的龙虾语音助手",
+      "docsPath": "/channels/migpt",
+      "docsLabel": "MiGPT 文档",
+      "order": 60,
+      "aliases": ["xiaomi", "mico"],
+      "markdownCapable": false,
+      "exposure": {
+        "configured": true,
+        "setup": true,
+        "docs": true
+      }
+    },
+    "install": {
+      "clawhubSpec": "@z-qinghui/migpt-claw",
+      "npmSpec": "@z-qinghui/migpt-claw",
+      "defaultChoice": "clawhub",
+      "minHostVersion": ">=0.1.0"
+    },
+    "startup": {
+      "deferConfiguredChannelFullLoadUntilAfterListen": true
+    }
+  },
+  "compat": {
+    "pluginApi": ">=0.1.0",
+    "minHostVersion": ">=0.1.0"
+  },
+  "build": {
+    "openclawVersion": "0.1.0",
+    "pluginSdkVersion": "0.1.0"
   },
   "dependencies": {
     "axios": "^1.13.6",
@@ -56,11 +91,11 @@
   "sideEffects": false,
   "license": "MIT",
   "author": {
-    "name": "Leon",
-    "email": "leon@example.com"
+    "name": "z-qinghui",
+    "url": "https://github.com/z-qinghui"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/leon/migpt-claw.git"
+    "url": "git+https://github.com/z-qinghui/migpt-claw.git"
   }
 }

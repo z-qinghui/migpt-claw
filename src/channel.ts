@@ -18,6 +18,7 @@ import { sleep } from './utils/parse.js';
 import { Debugger } from './utils/debug.js';
 import { MiSpeaker } from './speaker.js';
 import { getMiGPTRuntime } from './runtime.js';
+import { MiMoTTS } from './tts/mimo.js';
 
 const meta = {
   id: 'migpt',
@@ -181,6 +182,60 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
         return;
       }
 
+      // ============ MiMo TTS 初始化（如果配置了） ============
+      const mimoConfig = (cfg as any).channels?.migpt?.mimo;
+      if (mimoConfig?.apiKey) {
+        const mimoTTS = new MiMoTTS({
+          apiKey: mimoConfig.apiKey,
+          model: mimoConfig.model,
+          voice: mimoConfig.voice,
+          style: mimoConfig.style,
+        });
+        await mimoTTS.init();
+        MiSpeaker.setMiMoTTS(mimoTTS);
+        log?.info(`[migpt:${account.accountId}] MiMo TTS 已启用`);
+      }
+
+      // ============ 持续对话状态 ============
+      const keepAliveTimeout = (cfg as any).channels?.migpt?.keepAliveTimeout ?? 30;
+      let keepAlive = (cfg as any).channels?.migpt?.keepAlive ?? false;
+      let keepAliveTimer: ReturnType<typeof setTimeout> | null = null;
+
+      /**
+       * 重置持续对话超时计时器
+       * 超时后自动退出持续对话模式
+       */
+      const resetKeepAliveTimer = () => {
+        if (keepAliveTimer) clearTimeout(keepAliveTimer);
+        if (keepAlive) {
+          keepAliveTimer = setTimeout(() => {
+            keepAlive = false;
+            log?.info(`[migpt:${account.accountId}] 持续对话超时 (${keepAliveTimeout}s)，退出`);
+          }, keepAliveTimeout * 1000);
+        }
+      };
+
+      /**
+       * 进入持续对话模式
+       */
+      const enterKeepAlive = () => {
+        keepAlive = true;
+        resetKeepAliveTimer();
+        log?.info(`[migpt:${account.accountId}] 进入持续对话模式`);
+      };
+
+      /**
+       * 退出持续对话模式
+       */
+      const exitKeepAlive = () => {
+        keepAlive = false;
+        if (keepAliveTimer) {
+          clearTimeout(keepAliveTimer);
+          keepAliveTimer = null;
+        }
+        log?.info(`[migpt:${account.accountId}] 退出持续对话模式`);
+      };
+
       // 为每个设备启动轮询
       const devicePromises = devices.map(async (deviceName: string) => {
         log?.info(`[migpt:${account.accountId}] Starting poller for device: ${deviceName}`);
@@ -210,6 +265,10 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
         // 获取轮询间隔
         const heartbeat = cfg.channels?.migpt?.heartbeat ?? 1000;
 
+        // 持续对话唤醒关键词
+        const enterKeywords: string[] = (cfg as any).channels?.migpt?.keepAliveEnterKeywords ?? ['打开连续对话', '进入持续对话'];
+        const exitKeywords: string[] = (cfg as any).channels?.migpt?.keepAliveExitKeywords ?? ['关闭连续对话', '退出持续对话', '再见'];
+
         // 轮询消息
         while (!abortSignal.aborted) {
           try {
@@ -217,22 +276,28 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
             if (msg) {
               log?.info(`[migpt:${account.accountId}] Received message from ${deviceName}: ${msg.text.slice(0, 50)}...`);
 
-              // ============ 收到消息时回复收到 ============
-              const acknowledgeOnReceive = account.config.acknowledgeOnReceive
-                ?? cfg.channels?.migpt?.acknowledgeOnReceive ?? false;
+              // ============ 持续对话关键词检测 ============
+              if (enterKeywords.some(kw => msg.text.includes(kw))) {
+                enterKeepAlive();
+                MiSpeaker.play({ text: '已进入持续对话模式，说完后我会自动继续听' });
+                continue;
+              }
+              if (exitKeywords.some(kw => msg.text.includes(kw))) {
+                exitKeepAlive();
+                MiSpeaker.play({ text: '已退出持续对话模式' });
+                continue;
+              }
 
-              if (acknowledgeOnReceive) {
-                const receiveMessage = account.config.receiveMessage
-                  ?? cfg.channels?.migpt?.receiveMessage
-                  ?? '收到，处理中';
+              // ============ 抢答抑制：立即暂停小爱原生回复 ============
+              try {
+                await MiSpeaker.pause();
+              } catch {
+                // 忽略暂停失败
+              }
 
-                try {
-                  MiSpeaker.abortXiaoAI();
-                  MiSpeaker.stop();
-                  MiSpeaker.play({ text: receiveMessage });
-                } catch (err) {
-                  log?.error(`[migpt:${account.accountId}] Failed to play receive message: ${err}`);
-                }
+              // 重置持续对话计时器
+              if (keepAlive) {
+                resetKeepAliveTimer();
               }
 
               // 记录活动
@@ -348,9 +413,14 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
                   responsePrefix: '',
                   deliver: async (payload: { text?: string; mediaUrls?: string[]; mediaUrl?: string }, info: { kind: string }) => {
                     log?.info(`[migpt:${account.accountId}] deliver called, kind: ${info.kind}`);
-                    // 这里可以处理 AI 的回复并发送到音箱
                     if (payload.text) {
-                      MiSpeaker.play({ text: payload.text });
+                      await MiSpeaker.play({ text: payload.text });
+
+                      // ============ 持续对话：AI 回复后重新唤醒音箱 ============
+                      if (keepAlive) {
+                        await MiService.wakeUp();
+                        log?.info(`[migpt:${account.accountId}] 持续对话：已唤醒音箱等待下一句`);
+                      }
                     }
                   },
                 },
@@ -371,6 +441,11 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
       });
 
       await Promise.all(devicePromises);
+
+      // 清理持续对话计时器
+      if (keepAliveTimer) {
+        clearTimeout(keepAliveTimer);
+      }
     },
   },
 

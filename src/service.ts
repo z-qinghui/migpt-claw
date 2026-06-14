@@ -212,6 +212,35 @@ class _MiService {
     this._initialized = false;
     return this.init(config, did);
   }
+
+  /**
+   * 唤醒小爱音箱（进入监听状态）
+   * 使用 MIoT spec 调用唤醒动作 (siid=5, aiid=3)
+   * 基于 mi-gpt 项目的实现
+   */
+  async wakeUp(): Promise<boolean> {
+    if (!this.MiOT) {
+      console.warn('⚠️ MIoT 服务不可用，无法唤醒音箱');
+      return false;
+    }
+    try {
+      const result = await this.MiOT.doAction(5, 3, []);
+      return result;
+    } catch (e: any) {
+      console.warn('⚠️ 唤醒音箱失败:', e?.message || e);
+      return false;
+    }
+  }
+
+  /**
+   * 退出监听状态（取消唤醒）
+   * 使用 MiNA 暂停使小爱退出监听
+   */
+  async unWakeUp(): Promise<void> {
+    if (this.MiNA) {
+      await this.MiNA.pause().catch(() => {});
+    }
+  }
 }
 
 export const MiService = new _MiService();

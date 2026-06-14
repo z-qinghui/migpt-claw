@@ -1,4 +1,8 @@
 // Type declarations for openclaw/plugin-sdk
+declare module 'openclaw/plugin-sdk/channel-core' {
+  export function defineSetupPluginEntry(plugin: any): any;
+}
+
 declare module 'openclaw/plugin-sdk' {
   export const DEFAULT_ACCOUNT_ID: string;
 
