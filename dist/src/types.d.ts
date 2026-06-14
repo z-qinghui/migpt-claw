@@ -1,24 +1,18 @@
-export { ExtendedOpenClawConfig, MiGPTAccountConfig, MiGPTConfig, ResolvedMiAccount } from './config.js';
-import 'openclaw/plugin-sdk';
-import './service.js';
-import './mi/mina.js';
-import './mi/typing.js';
-import './mi/miot.js';
-
-interface IMessage {
+export type { MiGPTConfig, MiGPTAccountConfig, ResolvedMiAccount, ExtendedOpenClawConfig, } from './config.js';
+export interface IMessage {
     id: string;
     sender: 'user';
     text: string;
     timestamp: number;
     deviceId: string;
 }
-interface MiDevice {
+export interface MiDevice {
     did: string;
     name: string;
     model?: string;
     mac?: string;
 }
-interface MiMessageEvent {
+export interface MiMessageEvent {
     channel: 'migpt';
     accountId: string;
     from: string;
@@ -26,5 +20,4 @@ interface MiMessageEvent {
     text: string;
     timestamp: number;
 }
-
-export type { IMessage, MiDevice, MiMessageEvent };
+//# sourceMappingURL=types.d.ts.map

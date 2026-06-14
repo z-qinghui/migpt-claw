@@ -1,9 +1,8 @@
 import { MiNA } from './mina.js';
 import { MIoT } from './miot.js';
-import { MiAccount } from './typing.js';
-
-declare function updateMiAccount(account: MiAccount): (updated: MiAccount) => void;
-declare function getMiService(config: {
+import type { MiAccount } from './typing.js';
+export declare function updateMiAccount(account: MiAccount): (updated: MiAccount) => void;
+export declare function getMiService(config: {
     service: 'miot' | 'mina';
     userId?: string;
     password?: string;
@@ -11,5 +10,4 @@ declare function getMiService(config: {
     did?: string;
     relogin?: boolean;
 }): Promise<MiNA | MIoT | undefined>;
-
-export { getMiService, updateMiAccount };
+//# sourceMappingURL=common.d.ts.map

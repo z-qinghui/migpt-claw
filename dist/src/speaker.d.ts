@@ -1,10 +1,9 @@
-import { MiMoTTS } from './tts/mimo.js';
-
-interface IPlayOptions {
+import type { MiMoTTS } from './tts/mimo.js';
+export interface IPlayOptions {
     text?: string;
     url?: string;
 }
-interface IPlayResult {
+export interface IPlayResult {
     success: boolean;
     error?: string;
 }
@@ -51,6 +50,6 @@ declare class _MiSpeaker {
      */
     abortXiaoAI(): Promise<boolean>;
 }
-declare const MiSpeaker: _MiSpeaker;
-
-export { type IPlayOptions, type IPlayResult, MiSpeaker };
+export declare const MiSpeaker: _MiSpeaker;
+export {};
+//# sourceMappingURL=speaker.d.ts.map

@@ -1,10 +1,4 @@
-import { ChannelPlugin } from 'openclaw/plugin-sdk';
-import { ResolvedMiAccount } from './config.js';
-import './service.js';
-import './mi/mina.js';
-import './mi/typing.js';
-import './mi/miot.js';
-
-declare const miGPTPlugin: ChannelPlugin<ResolvedMiAccount>;
-
-export { miGPTPlugin };
+import type { ChannelPlugin } from 'openclaw/plugin-sdk';
+import type { ResolvedMiAccount } from './types.js';
+export declare const miGPTPlugin: ChannelPlugin<ResolvedMiAccount>;
+//# sourceMappingURL=channel.d.ts.map

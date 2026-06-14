@@ -1,9 +1,8 @@
-import { MiAccount, MIoTDevice } from './typing.js';
-
+import type { MIoTDevice, MiAccount } from './typing.js';
 type MIoTAccount = MiAccount & {
     device: MIoTDevice;
 };
-declare class MIoT {
+export declare class MIoT {
     account: MIoTAccount;
     constructor(account: MIoTAccount);
     static getDevice(account: MIoTAccount): Promise<MIoTAccount>;
@@ -31,5 +30,5 @@ declare class MIoT {
     rpc(method: string, params: any, id?: number): Promise<any>;
     private _callMIoTSpec;
 }
-
-export { MIoT };
+export {};
+//# sourceMappingURL=miot.d.ts.map

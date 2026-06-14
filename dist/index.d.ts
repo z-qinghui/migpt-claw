@@ -1,17 +1,4 @@
-import { OpenClawPluginApi } from 'openclaw/plugin-sdk';
-export { miGPTPlugin } from './src/channel.js';
-export { getMiGPTRuntime, setMiGPTRuntime } from './src/runtime.js';
-export { miGPTOnboardingAdapter } from './src/onboarding.js';
-export { MiService, MiServiceConfig } from './src/service.js';
-export { IMessage, MiMessage } from './src/message.js';
-export { MiSpeaker } from './src/speaker.js';
-export { ExtendedOpenClawConfig, MiGPTAccountConfig, MiGPTConfig, ResolvedMiAccount, applyMiAccountConfig, deleteMiAccount, formatMiAllowFrom, listMiAccountIds, resolveDefaultMiAccountId, resolveMiAccount, resolveMiAllowFrom, setMiAccountEnabled } from './src/config.js';
-export { MiDevice, MiMessageEvent } from './src/types.js';
-import './src/mi/mina.js';
-import './src/mi/typing.js';
-import './src/mi/miot.js';
-import './src/tts/mimo.js';
-
+import type { OpenClawPluginApi } from 'openclaw/plugin-sdk';
 declare const plugin: {
     id: string;
     name: string;
@@ -19,5 +6,13 @@ declare const plugin: {
     configSchema: any;
     register(api: OpenClawPluginApi): void;
 };
-
-export { plugin as default };
+export default plugin;
+export { miGPTPlugin } from './src/channel.js';
+export { setMiGPTRuntime, getMiGPTRuntime } from './src/runtime.js';
+export { miGPTOnboardingAdapter } from './src/onboarding.js';
+export { MiService, type MiServiceConfig } from './src/service.js';
+export { MiMessage, type IMessage } from './src/message.js';
+export { MiSpeaker } from './src/speaker.js';
+export * from './src/config.js';
+export * from './src/types.js';
+//# sourceMappingURL=index.d.ts.map

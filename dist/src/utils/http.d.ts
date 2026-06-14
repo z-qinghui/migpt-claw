@@ -1,5 +1,4 @@
-import { MiAccount } from '../mi/typing.js';
-
+import type { MiAccount } from '../mi/typing.js';
 interface HttpError {
     isError: true;
     error: any;
@@ -19,6 +18,6 @@ declare class HTTPClient {
     static buildURL: (url: string, query?: Record<string, any>) => string;
     static buildConfig: (config?: RequestConfig) => any;
 }
-declare const Http: HTTPClient;
-
-export { Http };
+export declare const Http: HTTPClient;
+export {};
+//# sourceMappingURL=http.d.ts.map

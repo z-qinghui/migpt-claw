@@ -1,5 +1,3 @@
-import { ChannelOnboardingAdapter } from 'openclaw/plugin-sdk';
-
-declare const miGPTOnboardingAdapter: ChannelOnboardingAdapter;
-
-export { miGPTOnboardingAdapter };
+import type { ChannelOnboardingAdapter } from 'openclaw/plugin-sdk';
+export declare const miGPTOnboardingAdapter: ChannelOnboardingAdapter;
+//# sourceMappingURL=onboarding.d.ts.map
