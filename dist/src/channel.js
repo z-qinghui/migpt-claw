@@ -162,6 +162,7 @@ const miGPTPlugin = {
       if (mimoConfig?.apiKey) {
         const mimoTTS = new MiMoTTS({
           apiKey: mimoConfig.apiKey,
+          baseUrl: mimoConfig.baseUrl,
           model: mimoConfig.model,
           voice: mimoConfig.voice,
           style: mimoConfig.style
