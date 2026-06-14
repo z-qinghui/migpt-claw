@@ -36,23 +36,16 @@ openclaw plugins install ~/.openclaw/plugins/migpt-claw --link
 openclaw plugins install "git:github.com/z-qinghui/migpt-claw@main"
 ```
 
-#### 方式三：通过 npm 安装
+#### 方式三：通过 npm 安装（暂不支持）
 
 ```bash
 openclaw plugins install npm:@z-qinghui/migpt-claw
 ```
 
-#### 方式四：通过 ClawHub 插件市场安装
+#### 方式四：通过 ClawHub 插件市场安装（暂不支持）
 
 ```bash
 openclaw plugins install clawhub:@z-qinghui/migpt-claw
-```
-
-#### 方式五：通过 tgz 包安装
-
-```bash
-# 下载 tgz 包后安装
-openclaw plugins install migpt-claw-1.0.0.tgz
 ```
 
 ### 第二步：配置账号
