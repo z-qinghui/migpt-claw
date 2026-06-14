@@ -12,6 +12,7 @@ class MiMoTTS {
   constructor(config) {
     this._config = {
       apiKey: config.apiKey,
+      baseUrl: config.baseUrl ?? "https://api.xiaomimimo.com/v1",
       model: config.model ?? "mimo-v2.5-tts",
       voice: config.voice ?? "mimo_default",
       style: config.style ?? "",
@@ -84,7 +85,7 @@ class MiMoTTS {
         audio: { format: useStream ? "pcm16" : "wav", voice },
         stream: useStream
       };
-      const response = await fetch("https://api.xiaomimimo.com/v1/chat/completions", {
+      const response = await fetch(`${this._config.baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
           "api-key": this._config.apiKey,

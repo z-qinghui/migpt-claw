@@ -99,6 +99,11 @@
             "type": "string",
             "description": "MiMo API Key"
           },
+          "baseUrl": {
+            "type": "string",
+            "description": "MiMo API Base URL",
+            "default": "https://api.xiaomimimo.com/v1"
+          },
           "model": {
             "type": "string",
             "description": "TTS 模型",
@@ -270,6 +275,7 @@
           "description": "MiMo-V2.5-TT 自定义 TTS 配置",
           "properties": {
             "apiKey": { "type": "string", "description": "MiMo API Key" },
+            "baseUrl": { "type": "string", "description": "MiMo API Base URL", "default": "https://api.xiaomimimo.com/v1" },
             "model": { "type": "string", "enum": ["mimo-v2.5-tts", "mimo-v2.5-tts-voicedesign", "mimo-v2.5-tts-voiceclone"], "default": "mimo-v2.5-tts" },
             "voice": { "type": "string", "description": "预设音色 ID", "default": "mimo_default" },
             "style": { "type": "string", "description": "风格指令" }

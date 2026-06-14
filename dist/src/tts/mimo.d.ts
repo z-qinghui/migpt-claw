@@ -1,6 +1,8 @@
 interface MiMoTTSConfig {
     /** MiMo API Key */
     apiKey: string;
+    /** MiMo API Base URL，默认 https://api.xiaomimimo.com/v1 */
+    baseUrl?: string;
     /** TTS 模型，默认 mimo-v2.5-tts */
     model?: string;
     /** 预设音色 ID，默认 mimo_default */

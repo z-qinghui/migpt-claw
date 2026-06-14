@@ -13,6 +13,8 @@ import { randomUUID } from 'node:crypto';
 export interface MiMoTTSConfig {
   /** MiMo API Key */
   apiKey: string;
+  /** MiMo API Base URL，默认 https://api.xiaomimimo.com/v1 */
+  baseUrl?: string;
   /** TTS 模型，默认 mimo-v2.5-tts */
   model?: string;
   /** 预设音色 ID，默认 mimo_default */
@@ -37,6 +39,7 @@ export class MiMoTTS {
   constructor(config: MiMoTTSConfig) {
     this._config = {
       apiKey: config.apiKey,
+      baseUrl: config.baseUrl ?? 'https://api.xiaomimimo.com/v1',
       model: config.model ?? 'mimo-v2.5-tts',
       voice: config.voice ?? 'mimo_default',
       style: config.style ?? '',
@@ -128,7 +131,7 @@ export class MiMoTTS {
       };
 
       // 调用 MiMo API
-      const response = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
+      const response = await fetch(`${this._config.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'api-key': this._config.apiKey,
