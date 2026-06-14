@@ -165,24 +165,48 @@ openclaw gateway restart
     "migpt": {
       "keepAlive": true,
       "keepAliveTimeout": 30,
-      "keepAliveEnterKeywords": ["打开连续对话", "进入持续对话"],
-      "keepAliveExitKeywords": ["关闭连续对话", "退出持续对话", "再见"]
+      "keepAliveEnterKeywords": ["打开连续对话", "进入持续对话", "开启持续对话", "持续对话模式"],
+      "keepAliveExitKeywords": ["关闭连续对话", "退出持续对话", "退出持续对话模式", "再见"]
     }
   }
 }
 ```
 
+**使用方法**：
+
+1. 先正常唤醒小爱："小爱同学"
+2. 说进入关键词："打开连续对话" 或 "开启持续对话"
+3. 听到"已进入持续对话模式"提示后，即可连续对话
+4. 说退出关键词或等待超时自动退出
+
+**默认关键词**：
+
+| 功能 | 默认关键词 |
+| --- | --- |
+| 进入持续对话 | "打开连续对话"、"进入持续对话"、"开启持续对话"、"持续对话模式" |
+| 退出持续对话 | "关闭连续对话"、"退出持续对话"、"退出持续对话模式"、"再见" |
+
 **工作原理**：
 
 - AI 回复后自动调用 MIoT 唤醒命令（`siid=5, aiid=3`）重新激活音箱麦克风
 - 超时无新消息自动退出持续对话模式
-- 支持语音关键词动态切换："打开连续对话" / "再见"
+- 支持语音关键词动态切换
+
+**⚠️ 已知问题：小爱原生抢答**
+
+在持续对话模式下，小爱音箱听到你说话后会**先用原生 AI 回复**，然后 migpt-claw 才收到消息并用 OpenClaw 回复。这是 MiGPT 项目的已知限制（[相关 issue](https://github.com/idootop/mi-gpt/issues/14)），目前没有完美解决方案。
+
+**应对方法**：
+- 等小爱原生回复说完后，OpenClaw 的回复会接着播放
+- 或者说"小爱同学，闭嘴"打断原生回复
 
 **抢答抑制**：收到新消息时立即暂停小爱原生回复，避免与 AI 回复冲突（借鉴 [MiGPT](https://github.com/idootop/mi-gpt) 的 `pause()` 机制）。
 
 ### MiMo 自定义 TTS
 
-支持小米 [MiMo-V2.5-TT](https://mimo.mi.com/docs/zh-CN/quick-start/usage-guide/multimodal-understanding/speech-synthesis-v2.5) 语音合成，提供更自然的语音播报：
+支持小米 [MiMo-V2.5-TT](https://mimo.mi.com/docs/zh-CN/quick-start/usage-guide/multimodal-understanding/speech-synthesis-v2.5) 语音合成，提供更自然的语音播报。
+
+#### 基础配置
 
 ```json
 {
@@ -200,7 +224,7 @@ openclaw gateway restart
 }
 ```
 
-**配置说明**：
+#### 配置说明
 
 | 字段 | 说明 | 默认值 |
 | --- | --- | --- |
@@ -209,8 +233,11 @@ openclaw gateway restart
 | `model` | TTS 模型 | `mimo-v2.5-tts` |
 | `voice` | 预设音色 ID | `mimo_default` |
 | `style` | 风格指令 | - |
+| `stream` | 启用流式传输（降低首字延迟） | `true` |
+| `port` | TTS 服务器固定端口（0 = 随机） | `0` |
+| `host` | TTS 服务器监听地址 | `0.0.0.0` |
 
-**可用音色**：
+#### 可用音色
 
 | 音色 | ID | 语言 | 性别 |
 | --- | --- | --- | --- |
@@ -223,7 +250,112 @@ openclaw gateway restart
 
 **风格示例**：`温柔`、`活泼`、`磁性`、`甜美`、`深沉`、`俏皮`、`东北话`、`四川话`
 
-**工作原理**：流式调用 MiMo API 生成 PCM16 音频 → 转换为 WAV → 本地 HTTP 服务器托管 → 音箱播放。MiMo TTS 失败时自动回退到小米原生 TTS。
+#### 工作原理
+
+```
+用户说话 → 小爱音箱 → MiMo TTS API（生成音频）→ 本地 HTTP 服务器托管 → 音箱播放
+```
+
+流式模式下，MiMo API 返回 PCM16 音频流，本地实时拼接为 WAV，边生成边播放，首字延迟更低。
+
+#### ⚠️ 云服务器部署注意事项
+
+**核心问题**：小爱音箱在你的**本地网络**，OpenClaw 在**云服务器**。音箱必须能访问 TTS 音频 URL。
+
+**解决方案**：设置环境变量 `MIMO_TTS_HOST_IP` 为云服务器的**公网 IP**，并开放 TTS 端口。
+
+**步骤**：
+
+1. **设置公网 IP 环境变量**
+
+   在 `docker-compose.yml` 中添加：
+   ```yaml
+   environment:
+     - MIMO_TTS_HOST_IP=你的公网IP
+   ```
+
+2. **配置固定端口**
+
+   在 `openclaw.json` 的 mimo 配置中添加固定端口（避免每次重启端口变化）：
+   ```json
+   "mimo": {
+     "apiKey": "...",
+     "port": 18790
+   }
+   ```
+
+3. **开放防火墙和安全组**
+
+   - 服务器防火墙：`iptables -A INPUT -p tcp --dport 18790 -j ACCEPT`
+   - 云服务商安全组：在控制台添加入方向规则，放行 TCP 端口 18790
+
+4. **重启服务**
+
+   ```bash
+   docker compose up -d
+   ```
+
+#### 本地网络部署
+
+如果 OpenClaw 和小爱音箱在**同一局域网**，无需设置 `MIMO_TTS_HOST_IP`，插件会自动检测局域网 IP。
+
+#### 故障排查
+
+**问题 1：音箱亮灯但没声音**
+
+原因：音箱无法访问 TTS 音频 URL。
+
+排查步骤：
+```bash
+# 1. 查看 TTS 服务器日志，确认 URL
+docker logs openclaw 2>&1 | grep "MiMo TTS 播放"
+# 输出示例: 🔊 MiMo TTS 播放: http://47.103.150.141:18790/audio/xxx.wav
+
+# 2. 测试 URL 是否可访问
+curl -I http://47.103.150.141:18790/audio/xxx.wav
+# 应返回 HTTP 200
+
+# 3. 如果返回超时/拒绝连接，检查：
+#    - 防火墙是否放行端口
+#    - 云服务商安全组是否放行
+#    - MIMO_TTS_HOST_IP 是否正确
+```
+
+**问题 2：TTS 端口与 OpenClaw 冲突**
+
+错误日志：`EADDRINUSE: address already in use`
+
+原因：mimo.port 设置的端口被其他服务占用。
+
+解决：更换端口，确保不与 OpenClaw（默认 37105）冲突。
+
+**问题 3：MiMo API 调用失败**
+
+错误日志：`⚠️ MiMo TTS 失败，回退到原生 TTS`
+
+排查步骤：
+```bash
+# 1. 检查 API Key 是否正确
+docker logs openclaw 2>&1 | grep "MiMo API error"
+
+# 2. 测试 API 连通性
+curl -X POST https://api.xiaomimimo.com/v1/chat/completions \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"mimo-v2.5-tts","messages":[{"role":"assistant","content":"测试"}],"audio":{"format":"wav","voice":"冰糖"}}'
+
+# 3. 检查 baseUrl 是否正确（有些 API 代理地址不同）
+```
+
+**问题 4：查看详细日志**
+
+```bash
+# 查看 MiMo TTS 相关日志
+docker logs openclaw 2>&1 | grep -i "mimo\|tts"
+
+# 查看完整启动日志
+docker logs openclaw --tail 200
+```
 
 ### 智能分流
 

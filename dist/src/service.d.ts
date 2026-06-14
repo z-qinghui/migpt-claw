@@ -1,6 +1,8 @@
 import { MiNA } from './mi/mina.js';
 import { MIoT } from './mi/miot.js';
-export interface MiServiceConfig {
+import './mi/typing.js';
+
+interface MiServiceConfig {
     /** 小米 ID（数字） */
     userId?: string;
     /** 密码 */
@@ -63,6 +65,6 @@ declare class _MiService {
      */
     unWakeUp(): Promise<void>;
 }
-export declare const MiService: _MiService;
-export {};
-//# sourceMappingURL=service.d.ts.map
+declare const MiService: _MiService;
+
+export { MiService, type MiServiceConfig };

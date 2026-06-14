@@ -1,9 +1,13 @@
-import type { OpenClawConfig } from 'openclaw/plugin-sdk';
-import type { MiServiceConfig } from './service.js';
+import { OpenClawConfig } from 'openclaw/plugin-sdk';
+import { MiServiceConfig } from './service.js';
+import './mi/mina.js';
+import './mi/typing.js';
+import './mi/miot.js';
+
 /**
  * 小米音箱 Channel 配置
  */
-export interface MiGPTConfig extends MiServiceConfig {
+interface MiGPTConfig extends MiServiceConfig {
     /** 启用频道 */
     enabled?: boolean;
     /** 默认账户 ID */
@@ -42,7 +46,7 @@ export interface MiGPTConfig extends MiServiceConfig {
 /**
  * 账户配置
  */
-export interface MiGPTAccountConfig extends MiServiceConfig {
+interface MiGPTAccountConfig extends MiServiceConfig {
     /** 启用账户 */
     enabled?: boolean;
     /** 账户名称 */
@@ -63,7 +67,7 @@ export interface MiGPTAccountConfig extends MiServiceConfig {
 /**
  * 解析后的账户信息
  */
-export interface ResolvedMiAccount {
+interface ResolvedMiAccount {
     /** 账户 ID */
     accountId: string;
     /** 启用状态 */
@@ -80,7 +84,7 @@ export interface ResolvedMiAccount {
 /**
  * OpenClaw 配置类型扩展
  */
-export interface ExtendedOpenClawConfig extends OpenClawConfig {
+interface ExtendedOpenClawConfig extends OpenClawConfig {
     channels?: {
         migpt?: MiGPTConfig;
     };
@@ -88,33 +92,34 @@ export interface ExtendedOpenClawConfig extends OpenClawConfig {
 /**
  * 列出所有账户 ID
  */
-export declare function listMiAccountIds(cfg: ExtendedOpenClawConfig): string[];
+declare function listMiAccountIds(cfg: ExtendedOpenClawConfig): string[];
 /**
  * 解析账户配置
  */
-export declare function resolveMiAccount(cfg: ExtendedOpenClawConfig, accountId?: string): ResolvedMiAccount;
+declare function resolveMiAccount(cfg: ExtendedOpenClawConfig, accountId?: string): ResolvedMiAccount;
 /**
  * 获取默认账户 ID
  */
-export declare function resolveDefaultMiAccountId(cfg: ExtendedOpenClawConfig): string;
+declare function resolveDefaultMiAccountId(cfg: ExtendedOpenClawConfig): string;
 /**
  * 应用账户配置
  */
-export declare function applyMiAccountConfig(cfg: ExtendedOpenClawConfig, accountId: string, updates: Partial<MiGPTAccountConfig>): ExtendedOpenClawConfig;
+declare function applyMiAccountConfig(cfg: ExtendedOpenClawConfig, accountId: string, updates: Partial<MiGPTAccountConfig>): ExtendedOpenClawConfig;
 /**
  * 设置账户启用状态
  */
-export declare function setMiAccountEnabled(cfg: ExtendedOpenClawConfig, accountId: string, enabled: boolean): ExtendedOpenClawConfig;
+declare function setMiAccountEnabled(cfg: ExtendedOpenClawConfig, accountId: string, enabled: boolean): ExtendedOpenClawConfig;
 /**
  * 删除账户
  */
-export declare function deleteMiAccount(cfg: ExtendedOpenClawConfig, accountId: string): ExtendedOpenClawConfig;
+declare function deleteMiAccount(cfg: ExtendedOpenClawConfig, accountId: string): ExtendedOpenClawConfig;
 /**
  * 解析允许的设备列表
  */
-export declare function resolveMiAllowFrom(cfg: ExtendedOpenClawConfig, _accountId?: string): string[];
+declare function resolveMiAllowFrom(cfg: ExtendedOpenClawConfig, _accountId?: string): string[];
 /**
  * 格式化允许的设备列表
  */
-export declare function formatMiAllowFrom(allowFrom: Array<string | number>): string[];
-//# sourceMappingURL=config.d.ts.map
+declare function formatMiAllowFrom(allowFrom: Array<string | number>): string[];
+
+export { type ExtendedOpenClawConfig, type MiGPTAccountConfig, type MiGPTConfig, type ResolvedMiAccount, applyMiAccountConfig, deleteMiAccount, formatMiAllowFrom, listMiAccountIds, resolveDefaultMiAccountId, resolveMiAccount, resolveMiAllowFrom, setMiAccountEnabled };

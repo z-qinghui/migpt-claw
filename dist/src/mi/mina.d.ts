@@ -1,8 +1,9 @@
-import type { MiAccount, MiConversations, MiNADevice } from './typing.js';
+import { MiAccount, MiNADevice, MiConversations } from './typing.js';
+
 type MiNAAccount = MiAccount & {
     device: MiNADevice;
 };
-export declare class MiNA {
+declare class MiNA {
     account: MiNAAccount;
     constructor(account: MiNAAccount);
     static getDevice(account: MiNAAccount): Promise<MiNAAccount>;
@@ -61,5 +62,5 @@ export declare class MiNA {
         timestamp?: number;
     }): Promise<MiConversations | undefined>;
 }
-export {};
-//# sourceMappingURL=mina.d.ts.map
+
+export { MiNA };

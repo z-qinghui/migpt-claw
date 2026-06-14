@@ -1,5 +1,4 @@
 export { MiNA } from './mina.js';
 export { MIoT } from './miot.js';
 export { getMiService } from './common.js';
-export * from './typing.js';
-//# sourceMappingURL=index.d.ts.map
+export { MIoTDevice, MiAccount, MiConversation, MiConversations, MiNADevice, MiPass } from './typing.js';

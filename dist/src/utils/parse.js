@@ -1,60 +1,51 @@
-export function jsonEncode(obj, options) {
-    const { prettier } = options ?? {};
-    try {
-        return JSON.stringify(obj, undefined, prettier ? 4 : 0);
-    }
-    catch (_) {
-        return undefined;
-    }
+function jsonEncode(obj, options) {
+  const { prettier } = options ?? {};
+  try {
+    return JSON.stringify(obj, void 0, prettier ? 4 : 0);
+  } catch (_) {
+    return void 0;
+  }
 }
-export function jsonDecode(json) {
-    if (!json) {
-        return undefined;
-    }
-    try {
-        return JSON.parse(json);
-    }
-    catch (_) {
-        return undefined;
-    }
+function jsonDecode(json) {
+  if (!json) {
+    return void 0;
+  }
+  try {
+    return JSON.parse(json);
+  } catch (_) {
+    return void 0;
+  }
 }
-/**
- * 清理 JSON 字符串并解码
- */
-export function cleanJsonAndDecode(input) {
-    if (input == undefined)
-        return undefined;
-    const pattern = /(\{[\s\S]*?"\s*:\s*[\s\S]*?})/;
-    const match = input.match(pattern);
-    if (!match) {
-        return undefined;
-    }
-    return jsonDecode(match[0]);
+function cleanJsonAndDecode(input) {
+  if (input == void 0) return void 0;
+  const pattern = /(\{[\s\S]*?"\s*:\s*[\s\S]*?})/;
+  const match = input.match(pattern);
+  if (!match) {
+    return void 0;
+  }
+  return jsonDecode(match[0]);
 }
-/**
- * 获取数组第一个元素
- */
-export function firstOf(items) {
-    return items ? (items.length < 1 ? undefined : items[0]) : undefined;
+function firstOf(items) {
+  return items ? items.length < 1 ? void 0 : items[0] : void 0;
 }
-/**
- * 获取数组最后一个元素
- */
-export function lastOf(items) {
-    return items?.length ? items[items.length - 1] : undefined;
+function lastOf(items) {
+  return items?.length ? items[items.length - 1] : void 0;
 }
-/**
- * 休眠
- */
-export function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
-/**
- * 断言
- */
-export function assert(condition, message) {
-    if (!condition) {
-        throw new Error(message);
-    }
+function assert(condition, message) {
+  if (!condition) {
+    throw new Error(message);
+  }
 }
+export {
+  assert,
+  cleanJsonAndDecode,
+  firstOf,
+  jsonDecode,
+  jsonEncode,
+  lastOf,
+  sleep
+};
 //# sourceMappingURL=parse.js.map

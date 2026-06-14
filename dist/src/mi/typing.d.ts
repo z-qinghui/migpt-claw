@@ -1,7 +1,7 @@
 /**
  * 小米账号类型定义
  */
-export interface MiAccount {
+interface MiAccount {
     /** 小米 ID（数字） */
     userId?: string;
     /** 密码 */
@@ -24,7 +24,7 @@ export interface MiAccount {
 /**
  * 登录态
  */
-export interface MiPass {
+interface MiPass {
     code: number;
     qs?: string;
     _sign?: string;
@@ -39,7 +39,7 @@ export interface MiPass {
 /**
  * MiNA 设备
  */
-export interface MiNADevice {
+interface MiNADevice {
     deviceID: string;
     deviceId?: string;
     miotDID: string;
@@ -57,7 +57,7 @@ export interface MiNADevice {
 /**
  * MIoT 设备
  */
-export interface MIoTDevice {
+interface MIoTDevice {
     did: string;
     name: string;
     mac: string;
@@ -69,7 +69,7 @@ export interface MIoTDevice {
 /**
  * 对话消息
  */
-export interface MiConversation {
+interface MiConversation {
     query: string;
     time: number;
     answers: Array<{
@@ -81,9 +81,10 @@ export interface MiConversation {
 /**
  * 对话列表
  */
-export interface MiConversations {
+interface MiConversations {
     records: MiConversation[];
     hasMore: boolean;
     cursor?: number;
 }
-//# sourceMappingURL=typing.d.ts.map
+
+export type { MIoTDevice, MiAccount, MiConversation, MiConversations, MiNADevice, MiPass };

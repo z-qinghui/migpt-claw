@@ -1,5 +1,41 @@
+import { networkInterfaces } from 'node:os';
 import { MiService } from './service.js';
 import type { MiMoTTS } from './tts/mimo.js';
+
+/**
+ * 获取小爱音箱可访问的主机 IP
+ * 优先使用环境变量 MIMO_TTS_HOST_IP，否则自动检测
+ */
+function getHostLANIP(): string {
+  // 优先使用环境变量（适用于云服务器场景）
+  const envIP = process.env.MIMO_TTS_HOST_IP;
+  if (envIP) return envIP;
+
+  const nets = networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] ?? []) {
+      if (net.internal || net.family !== 'IPv4') continue;
+      if (net.address.startsWith('172.17.')) continue;
+      if (
+        net.address.startsWith('192.168.') ||
+        net.address.startsWith('10.') ||
+        net.address.startsWith('172.16.') ||
+        net.address.startsWith('172.18.') ||
+        net.address.startsWith('172.19.') ||
+        net.address.startsWith('172.2') ||
+        net.address.startsWith('172.3')
+      ) {
+        return net.address;
+      }
+    }
+  }
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] ?? []) {
+      if (!net.internal && net.family === 'IPv4') return net.address;
+    }
+  }
+  return '127.0.0.1';
+}
 
 export interface IPlayOptions {
   text?: string;
@@ -46,9 +82,10 @@ class _MiSpeaker {
         if (this._mimoTTS) {
           const ttsResult = await this._mimoTTS.synthesize(text);
           if (ttsResult.success && ttsResult.url) {
-            // MiMo 生成的音频需要先退出小爱监听状态，防止音频被误识别为语音指令
             await this._suppressBeforeCustomTTS();
-            result = await MiService.MiNA!.play({ url: ttsResult.url });
+            const hostIP = getHostLANIP();
+            const externalUrl = ttsResult.url.replace(/0\.0\.0\.0|127\.0\.0\.1|localhost/g, hostIP);
+            result = await MiService.MiNA!.play({ url: externalUrl });
           } else {
             console.warn('⚠️ MiMo TTS 失败，回退到原生 TTS:', ttsResult.error);
             result = await MiService.play(text);

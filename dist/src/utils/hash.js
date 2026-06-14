@@ -1,95 +1,75 @@
-import * as crypto from 'node:crypto';
-/**
- * MD5 哈希
- */
-export function md5(data) {
-    return crypto.createHash('md5').update(data).digest('hex');
+import * as crypto from "node:crypto";
+function md5(data) {
+  return crypto.createHash("md5").update(data).digest("hex");
 }
-/**
- * SHA1 哈希
- */
-export function sha1(data) {
-    return crypto.createHash('sha1').update(data).digest('base64');
+function sha1(data) {
+  return crypto.createHash("sha1").update(data).digest("base64");
 }
-/**
- * SHA256 HMAC
- */
-export function sha256(snonce, msg) {
-    return crypto.createHmac('sha256', Buffer.from(snonce, 'base64')).update(msg).digest('base64');
+function sha256(snonce, msg) {
+  return crypto.createHmac("sha256", Buffer.from(snonce, "base64")).update(msg).digest("base64");
 }
-/**
- * 签名 nonce（用于 MIoT）
- * 参考 migpt-next 实现
- */
-export function signNonce(ssecurity, nonce) {
-    const m = crypto.createHash('sha256');
-    m.update(ssecurity, 'base64');
-    m.update(nonce, 'base64');
-    return m.digest().toString('base64');
+function signNonce(ssecurity, nonce) {
+  const m = crypto.createHash("sha256");
+  m.update(ssecurity, "base64");
+  m.update(nonce, "base64");
+  return m.digest().toString("base64");
 }
-/**
- * 生成 UUID
- */
-export function uuid() {
-    return crypto.randomUUID();
+function uuid() {
+  return crypto.randomUUID();
 }
-/**
- * 生成随机字符串
- */
-export function randomString(len) {
-    if (len < 1)
-        return '';
-    const s = Math.random().toString(36).slice(2);
-    return s + randomString(len - s.length);
+function randomString(len) {
+  if (len < 1) return "";
+  const s = Math.random().toString(36).slice(2);
+  return s + randomString(len - s.length);
 }
-/**
- * 生成随机噪声（用于 MIoT nonce）
- * 参考 MiService Python 实现：urandom(8) + int(time.time() / 60).to_bytes(4, "big")
- */
-export function randomNoise() {
-    const randomBytes = crypto.randomBytes(8);
-    const timeInMinutes = Math.floor(Date.now() / 1000 / 60);
-    // 使用 Uint32BE 写入 4 字节时间戳（大端序）
-    const timeBuffer = Buffer.alloc(4);
-    timeBuffer.writeUInt32BE(timeInMinutes >>> 0, 0);
-    return Buffer.concat([randomBytes, timeBuffer]).toString('base64');
+function randomNoise() {
+  const randomBytes = crypto.randomBytes(8);
+  const timeInMinutes = Math.floor(Date.now() / 1e3 / 60);
+  const timeBuffer = Buffer.alloc(4);
+  timeBuffer.writeUInt32BE(timeInMinutes >>> 0, 0);
+  return Buffer.concat([randomBytes, timeBuffer]).toString("base64");
 }
-/**
- * RC4 加密
- */
-export function rc4Encrypt(key, data) {
-    const ksa = (key) => {
-        const S = new Array(256);
-        for (let i = 0; i < 256; i++) {
-            S[i] = i;
-        }
-        let j = 0;
-        for (let i = 0; i < 256; i++) {
-            j = (j + S[i] + key[i % key.length]) & 0xff;
-            [S[i], S[j]] = [S[j], S[i]];
-        }
-        return S;
-    };
-    const prga = (S, data) => {
-        const result = Buffer.alloc(data.length);
-        let i = 0;
-        let j = 0;
-        for (let n = 0; n < data.length; n++) {
-            i = (i + 1) & 0xff;
-            j = (j + S[i]) & 0xff;
-            [S[i], S[j]] = [S[j], S[i]];
-            const K = S[(S[i] + S[j]) & 0xff];
-            result[n] = data[n] ^ K;
-        }
-        return result;
-    };
-    const S = ksa(key);
-    return prga(S, data);
+function rc4Encrypt(key, data) {
+  const ksa = (key2) => {
+    const S2 = new Array(256);
+    for (let i = 0; i < 256; i++) {
+      S2[i] = i;
+    }
+    let j = 0;
+    for (let i = 0; i < 256; i++) {
+      j = j + S2[i] + key2[i % key2.length] & 255;
+      [S2[i], S2[j]] = [S2[j], S2[i]];
+    }
+    return S2;
+  };
+  const prga = (S2, data2) => {
+    const result = Buffer.alloc(data2.length);
+    let i = 0;
+    let j = 0;
+    for (let n = 0; n < data2.length; n++) {
+      i = i + 1 & 255;
+      j = j + S2[i] & 255;
+      [S2[i], S2[j]] = [S2[j], S2[i]];
+      const K = S2[S2[i] + S2[j] & 255];
+      result[n] = data2[n] ^ K;
+    }
+    return result;
+  };
+  const S = ksa(key);
+  return prga(S, data);
 }
-/**
- * RC4 解密（与加密相同）
- */
-export function rc4Decrypt(key, data) {
-    return rc4Encrypt(key, data);
+function rc4Decrypt(key, data) {
+  return rc4Encrypt(key, data);
 }
+export {
+  md5,
+  randomNoise,
+  randomString,
+  rc4Decrypt,
+  rc4Encrypt,
+  sha1,
+  sha256,
+  signNonce,
+  uuid
+};
 //# sourceMappingURL=hash.js.map

@@ -191,10 +191,13 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
           model: mimoConfig.model,
           voice: mimoConfig.voice,
           style: mimoConfig.style,
+          stream: mimoConfig.stream,
+          port: mimoConfig.port,
+          host: mimoConfig.host,
         });
         await mimoTTS.init();
         MiSpeaker.setMiMoTTS(mimoTTS);
-        log?.info(`[migpt:${account.accountId}] MiMo TTS 已启用`);
+        log?.info(`[migpt:${account.accountId}] MiMo TTS 已启用 (server: ${mimoTTS.serverUrl})`);
       }
 
       // ============ 持续对话状态 ============
@@ -267,8 +270,8 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
         const heartbeat = cfg.channels?.migpt?.heartbeat ?? 1000;
 
         // 持续对话唤醒关键词
-        const enterKeywords: string[] = (cfg as any).channels?.migpt?.keepAliveEnterKeywords ?? ['打开连续对话', '进入持续对话'];
-        const exitKeywords: string[] = (cfg as any).channels?.migpt?.keepAliveExitKeywords ?? ['关闭连续对话', '退出持续对话', '再见'];
+        const enterKeywords: string[] = (cfg as any).channels?.migpt?.keepAliveEnterKeywords ?? ['打开连续对话', '进入持续对话', '开启持续对话', '持续对话模式'];
+        const exitKeywords: string[] = (cfg as any).channels?.migpt?.keepAliveExitKeywords ?? ['关闭连续对话', '退出持续对话', '退出持续对话模式', '再见'];
 
         // 轮询消息
         while (!abortSignal.aborted) {
@@ -280,12 +283,17 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
               // ============ 持续对话关键词检测 ============
               if (enterKeywords.some(kw => msg.text.includes(kw))) {
                 enterKeepAlive();
-                MiSpeaker.play({ text: '已进入持续对话模式，说完后我会自动继续听' });
+                await MiSpeaker.play({ text: '已进入持续对话模式，说完后我会自动继续听' });
+                // 等音频播完再唤醒（TTS 文本约 15 字，按 250ms/字估算）
+                await sleep(4000);
+                // 唤醒音箱麦克风，准备接收下一句
+                await MiService.wakeUp();
+                log?.info(`[migpt:${account.accountId}] 持续对话：已唤醒音箱等待下一句`);
                 continue;
               }
               if (exitKeywords.some(kw => msg.text.includes(kw))) {
                 exitKeepAlive();
-                MiSpeaker.play({ text: '已退出持续对话模式' });
+                await MiSpeaker.play({ text: '已退出持续对话模式' });
                 continue;
               }
 

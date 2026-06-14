@@ -1,4 +1,4 @@
-export interface IMessage {
+interface IMessage {
     id: string;
     sender: 'user';
     text: string;
@@ -46,6 +46,6 @@ declare class _MiMessage {
      */
     clearAll(): void;
 }
-export declare const MiMessage: _MiMessage;
-export {};
-//# sourceMappingURL=message.d.ts.map
+declare const MiMessage: _MiMessage;
+
+export { type IMessage, MiMessage };

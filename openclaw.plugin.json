@@ -118,6 +118,21 @@
           "style": {
             "type": "string",
             "description": "风格指令（如 温柔, 活泼, 磁性, 甜美 等）"
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "启用流式传输（降低首字延迟）",
+            "default": true
+          },
+          "port": {
+            "type": "number",
+            "description": "TTS 服务器固定端口（0 = 随机分配，云服务器建议固定端口以便开放防火墙）",
+            "default": 0
+          },
+          "host": {
+            "type": "string",
+            "description": "TTS 服务器监听地址",
+            "default": "0.0.0.0"
           }
         },
         "required": ["apiKey"]
@@ -271,17 +286,20 @@
           "default": ["关闭连续对话", "退出持续对话", "再见"]
         },
         "mimo": {
-          "type": "object",
-          "description": "MiMo-V2.5-TT 自定义 TTS 配置",
-          "properties": {
-            "apiKey": { "type": "string", "description": "MiMo API Key" },
-            "baseUrl": { "type": "string", "description": "MiMo API Base URL", "default": "https://api.xiaomimimo.com/v1" },
-            "model": { "type": "string", "enum": ["mimo-v2.5-tts", "mimo-v2.5-tts-voicedesign", "mimo-v2.5-tts-voiceclone"], "default": "mimo-v2.5-tts" },
-            "voice": { "type": "string", "description": "预设音色 ID", "default": "mimo_default" },
-            "style": { "type": "string", "description": "风格指令" }
-          },
-          "required": ["apiKey"]
-        }
+           "type": "object",
+           "description": "MiMo-V2.5-TT 自定义 TTS 配置",
+           "properties": {
+             "apiKey": { "type": "string", "description": "MiMo API Key" },
+             "baseUrl": { "type": "string", "description": "MiMo API Base URL", "default": "https://api.xiaomimimo.com/v1" },
+             "model": { "type": "string", "enum": ["mimo-v2.5-tts", "mimo-v2.5-tts-voicedesign", "mimo-v2.5-tts-voiceclone"], "default": "mimo-v2.5-tts" },
+             "voice": { "type": "string", "description": "预设音色 ID", "default": "mimo_default" },
+             "style": { "type": "string", "description": "风格指令" },
+             "stream": { "type": "boolean", "description": "启用流式传输", "default": true },
+             "port": { "type": "number", "description": "TTS 服务器固定端口（0=随机）", "default": 0 },
+             "host": { "type": "string", "description": "TTS 服务器监听地址", "default": "0.0.0.0" }
+           },
+           "required": ["apiKey"]
+         }
       },
       "uiHints": {
         "userId": {

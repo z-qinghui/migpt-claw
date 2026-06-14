@@ -1,11 +1,15 @@
 let runtime = null;
-export function setMiGPTRuntime(next) {
-    runtime = next;
+function setMiGPTRuntime(next) {
+  runtime = next;
 }
-export function getMiGPTRuntime() {
-    if (!runtime) {
-        throw new Error("MiGPT runtime not initialized");
-    }
-    return runtime;
+function getMiGPTRuntime() {
+  if (!runtime) {
+    throw new Error("MiGPT runtime not initialized");
+  }
+  return runtime;
 }
+export {
+  getMiGPTRuntime,
+  setMiGPTRuntime
+};
 //# sourceMappingURL=runtime.js.map
