@@ -37,6 +37,7 @@ declare class MiMoTTS {
         url: string;
         success: boolean;
         error?: string;
+        duration?: number;
     }>;
     /**
      * 清理临时文件和关闭服务器

@@ -453,6 +453,19 @@ migpt-claw/
         └── SKILL.md
 ```
 
+## 更新日志
+
+### 2026-06-15
+
+**修复**：
+- 🐛 **持续对话音频播放完成问题**：之前唤醒音箱时会打断正在播放的回复，现在根据音频实际时长等待播放完成后再唤醒（额外加 0.5s 缓冲）
+- 🐛 **channelConfigs 配置警告**：修复 `channel plugin manifest declares migpt without channelConfigs metadata` 警告，使用正确的 `schema` 包装格式
+- 🐛 **新增 enabled/streaming 配置项**：在 channelConfigs schema 中添加 `enabled` 和 `streaming` 属性定义
+
+**优化**：
+- ✨ **音频时长返回**：MiMo TTS `synthesize()` 现在返回 `duration`（音频时长），用于精确控制唤醒时机
+- ✨ **调试日志增强**：`Speaker.play()` 和 `MiNA.play()` 添加详细日志输出，便于问题排查
+
 ## 开发
 
 ```bash

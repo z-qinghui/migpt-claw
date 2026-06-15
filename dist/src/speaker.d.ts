@@ -3,10 +3,12 @@ import { MiMoTTS } from './tts/mimo.js';
 interface IPlayOptions {
     text?: string;
     url?: string;
+    duration?: number;
 }
 interface IPlayResult {
     success: boolean;
     error?: string;
+    duration?: number;
 }
 declare class _MiSpeaker {
     /** MiMo TTS 实例（延迟注入） */

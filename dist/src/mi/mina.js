@@ -132,15 +132,19 @@ class MiNA {
   async play({ text, url, save = 0 } = {}) {
     let res;
     if (url) {
+      console.log(`\u{1F50A} MiNA.play URL: ${url}`);
       res = await this.callUbus("mediaplayer", "player_play_url", {
         url,
         type: 1
       });
+      console.log(`\u{1F50A} MiNA.play URL result:`, JSON.stringify(res));
     } else if (text) {
+      console.log(`\u{1F50A} MiNA.play text: ${text.slice(0, 50)}...`);
       res = await this.callUbus("mibrain", "text_to_speech", {
         text,
         save
       });
+      console.log(`\u{1F50A} MiNA.play text result:`, JSON.stringify(res));
     } else {
       res = await this.callUbus("mediaplayer", "player_play_operation", {
         action: "play"

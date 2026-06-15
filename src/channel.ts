@@ -283,10 +283,11 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
               // ============ 持续对话关键词检测 ============
               if (enterKeywords.some(kw => msg.text.includes(kw))) {
                 enterKeepAlive();
-                await MiSpeaker.play({ text: '已进入持续对话模式，说完后我会自动继续听' });
-                // 等音频播完再唤醒（TTS 文本约 15 字，按 250ms/字估算）
-                await sleep(4000);
-                // 唤醒音箱麦克风，准备接收下一句
+                const enterResult = await MiSpeaker.play({ text: '已进入持续对话模式，说完后我会自动继续听' });
+                // 等音频播完再唤醒（额外加 0.5s 缓冲）
+                const waitMs = enterResult.duration ? Math.ceil(enterResult.duration * 1000) + 500 : 4000;
+                log?.info(`[migpt:${account.accountId}] 等待音频播放完成: ${waitMs}ms`);
+                await sleep(waitMs);
                 await MiService.wakeUp();
                 log?.info(`[migpt:${account.accountId}] 持续对话：已唤醒音箱等待下一句`);
                 continue;
@@ -423,10 +424,14 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
                   deliver: async (payload: { text?: string; mediaUrls?: string[]; mediaUrl?: string }, info: { kind: string }) => {
                     log?.info(`[migpt:${account.accountId}] deliver called, kind: ${info.kind}`);
                     if (payload.text) {
-                      await MiSpeaker.play({ text: payload.text });
+                      const playResult = await MiSpeaker.play({ text: payload.text });
 
                       // ============ 持续对话：AI 回复后重新唤醒音箱 ============
                       if (keepAlive) {
+                        // 等音频播完再唤醒（额外加 0.5s 缓冲）
+                        const waitMs = playResult.duration ? Math.ceil(playResult.duration * 1000) + 500 : 2000;
+                        log?.info(`[migpt:${account.accountId}] 等待音频播放完成: ${waitMs}ms`);
+                        await sleep(waitMs);
                         await MiService.wakeUp();
                         log?.info(`[migpt:${account.accountId}] 持续对话：已唤醒音箱等待下一句`);
                       }

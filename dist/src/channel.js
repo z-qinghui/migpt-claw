@@ -227,8 +227,10 @@ const miGPTPlugin = {
               log?.info(`[migpt:${account.accountId}] Received message from ${deviceName}: ${msg.text.slice(0, 50)}...`);
               if (enterKeywords.some((kw) => msg.text.includes(kw))) {
                 enterKeepAlive();
-                await MiSpeaker.play({ text: "\u5DF2\u8FDB\u5165\u6301\u7EED\u5BF9\u8BDD\u6A21\u5F0F\uFF0C\u8BF4\u5B8C\u540E\u6211\u4F1A\u81EA\u52A8\u7EE7\u7EED\u542C" });
-                await sleep(4e3);
+                const enterResult = await MiSpeaker.play({ text: "\u5DF2\u8FDB\u5165\u6301\u7EED\u5BF9\u8BDD\u6A21\u5F0F\uFF0C\u8BF4\u5B8C\u540E\u6211\u4F1A\u81EA\u52A8\u7EE7\u7EED\u542C" });
+                const waitMs = enterResult.duration ? Math.ceil(enterResult.duration * 1e3) + 500 : 4e3;
+                log?.info(`[migpt:${account.accountId}] \u7B49\u5F85\u97F3\u9891\u64AD\u653E\u5B8C\u6210: ${waitMs}ms`);
+                await sleep(waitMs);
                 await MiService.wakeUp();
                 log?.info(`[migpt:${account.accountId}] \u6301\u7EED\u5BF9\u8BDD\uFF1A\u5DF2\u5524\u9192\u97F3\u7BB1\u7B49\u5F85\u4E0B\u4E00\u53E5`);
                 continue;
@@ -343,8 +345,11 @@ ${msg.text}`;
                   deliver: async (payload, info) => {
                     log?.info(`[migpt:${account.accountId}] deliver called, kind: ${info.kind}`);
                     if (payload.text) {
-                      await MiSpeaker.play({ text: payload.text });
+                      const playResult = await MiSpeaker.play({ text: payload.text });
                       if (keepAlive) {
+                        const waitMs = playResult.duration ? Math.ceil(playResult.duration * 1e3) + 500 : 2e3;
+                        log?.info(`[migpt:${account.accountId}] \u7B49\u5F85\u97F3\u9891\u64AD\u653E\u5B8C\u6210: ${waitMs}ms`);
+                        await sleep(waitMs);
                         await MiService.wakeUp();
                         log?.info(`[migpt:${account.accountId}] \u6301\u7EED\u5BF9\u8BDD\uFF1A\u5DF2\u5524\u9192\u97F3\u7BB1\u7B49\u5F85\u4E0B\u4E00\u53E5`);
                       }

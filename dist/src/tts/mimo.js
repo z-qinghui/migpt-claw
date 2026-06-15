@@ -144,7 +144,11 @@ class MiMoTTS {
       const filePath = join(this._audioDir, fileName);
       await writeFile(filePath, audioBuffer);
       const url = `${this._serverUrl}/audio/${fileName}`;
-      return { url, success: true };
+      const headerSize = 44;
+      const sampleRate = 24e3;
+      const bytesPerSample = 2;
+      const duration = (audioBuffer.length - headerSize) / (sampleRate * bytesPerSample);
+      return { url, success: true, duration };
     } catch (err) {
       return { url: "", success: false, error: err.message };
     }

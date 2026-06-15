@@ -35,7 +35,9 @@ class _MiSpeaker {
    */
   async play(options) {
     const { text, url } = options;
+    console.log(`\u{1F50A} Speaker.play called: text=${text?.slice(0, 50)}..., url=${url}`);
     if (!MiService.MiNA && !MiService.MiOT) {
+      console.error("\u274C Speaker.play failed: MiNA/MiOT service not initialized");
       return { success: false, error: "MiNA/MiOT service not initialized" };
     }
     try {
@@ -44,27 +46,35 @@ class _MiSpeaker {
         if (!MiService.MiNA) {
           return { success: false, error: "MiNA service not initialized for URL playback" };
         }
+        console.log(`\u{1F50A} Playing URL: ${url}`);
         result = await MiService.MiNA.play({ url });
       } else if (text) {
         if (this._mimoTTS) {
+          console.log(`\u{1F50A} Using MiMo TTS for: ${text.slice(0, 30)}...`);
           const ttsResult = await this._mimoTTS.synthesize(text);
           if (ttsResult.success && ttsResult.url) {
             await this._suppressBeforeCustomTTS();
             const hostIP = getHostLANIP();
             const externalUrl = ttsResult.url.replace(/0\.0\.0\.0|127\.0\.0\.1|localhost/g, hostIP);
+            console.log(`\u{1F50A} MiMo TTS \u64AD\u653E: ${externalUrl} (\u65F6\u957F: ${ttsResult.duration?.toFixed(1)}s)`);
             result = await MiService.MiNA.play({ url: externalUrl });
+            console.log(`\u{1F50A} MiMo TTS play result: ${result}`);
+            if (result) {
+              return { success: true, duration: ttsResult.duration };
+            }
           } else {
             console.warn("\u26A0\uFE0F MiMo TTS \u5931\u8D25\uFF0C\u56DE\u9000\u5230\u539F\u751F TTS:", ttsResult.error);
             result = await MiService.play(text);
           }
         } else {
+          console.log(`\u{1F50A} Using native TTS for: ${text.slice(0, 30)}...`);
           result = await MiService.play(text);
         }
       } else {
         return { success: false, error: "text or url is required" };
       }
       if (result) {
-        return { success: true };
+        return { success: true, duration: options.duration };
       } else {
         return { success: false, error: "Playback failed" };
       }

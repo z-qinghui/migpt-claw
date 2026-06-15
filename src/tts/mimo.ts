@@ -102,7 +102,7 @@ export class MiMoTTS {
   async synthesize(text: string, options?: {
     voice?: string;
     style?: string;
-  }): Promise<{ url: string; success: boolean; error?: string }> {
+  }): Promise<{ url: string; success: boolean; error?: string; duration?: number }> {
     if (!this._ready) {
       const ok = await this.init();
       if (!ok) return { url: '', success: false, error: 'TTS server not initialized' };
@@ -209,7 +209,15 @@ export class MiMoTTS {
       await writeFile(filePath, audioBuffer);
 
       const url = `${this._serverUrl}/audio/${fileName}`;
-      return { url, success: true };
+      
+      // 计算音频时长（秒）
+      // WAV: PCM 16-bit mono 24000 Hz
+      const headerSize = 44;
+      const sampleRate = 24000;
+      const bytesPerSample = 2;
+      const duration = (audioBuffer.length - headerSize) / (sampleRate * bytesPerSample);
+      
+      return { url, success: true, duration };
     } catch (err: any) {
       return { url: '', success: false, error: err.message };
     }
