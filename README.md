@@ -67,10 +67,11 @@ openclaw plugins install clawhub:@z-qinghui/migpt-claw
       "acknowledgeOnReceive": true,
       "receiveMessage": "收到，处理中",
       "speakerControl": "mina",
+      "streaming": true,
       "keepAlive": true,
       "keepAliveTimeout": 30,
-      "keepAliveEnterKeywords": ["打开连续对话", "进入持续对话"],
-      "keepAliveExitKeywords": ["关闭连续对话", "退出持续对话", "再见"],
+      "keepAliveEnterKeywords": ["打开连续对话", "进入持续对话", "开启持续对话", "持续对话模式"],
+      "keepAliveExitKeywords": ["关闭连续对话", "退出持续对话", "退出持续对话模式", "再见"],
       "hardwareControlVerbs": [
         "播放", "打开", "关闭", "暂停", "继续", "停止", "切换",
         "开启", "关掉", "开", "关", "启动", "调节",
@@ -109,9 +110,11 @@ openclaw plugins install clawhub:@z-qinghui/migpt-claw
 | `receiveMessage` | 收到消息回复文案 | `收到，处理中` |
 | `keepAlive` | 默认开启持续对话 | `false` |
 | `keepAliveTimeout` | 持续对话超时秒数 | `30` |
-| `keepAliveEnterKeywords` | 进入持续对话关键词 | `["打开连续对话", "进入持续对话"]` |
-| `keepAliveExitKeywords` | 退出持续对话关键词 | `["关闭连续对话", "退出持续对话", "再见"]` |
+| `keepAliveEnterKeywords` | 进入持续对话关键词 | `["打开连续对话", "进入持续对话", "开启持续对话", "持续对话模式"]` |
+| `keepAliveExitKeywords` | 退出持续对话关键词 | `["关闭连续对话", "退出持续对话", "退出持续对话模式", "再见"]` |
 | `hardwareControlVerbs` | 硬件控制指令动词关键词 | 25 个默认动词（见智能分流章节） |
+| `streaming` | 启用流式 TTS 输出 | `true` |
+| `systemPrompt` | 系统提示词，定制 AI 在音箱场景下的行为规范 | - |
 | `mimo` | MiMo TTS 配置 | 不配置则使用小米原生 TTS |
 
 ### 第三步：启动服务
@@ -166,8 +169,8 @@ openclaw gateway restart
     "migpt": {
       "keepAlive": true,
       "keepAliveTimeout": 30,
-      "keepAliveEnterKeywords": ["打开连续对话", "进入持续对话", "开启持续对话", "持续对话模式"],
-      "keepAliveExitKeywords": ["关闭连续对话", "退出持续对话", "退出持续对话模式", "再见"]
+      "keepAliveEnterKeywords": ["打开持续对话", "进入持续对话", "开启持续对话", "打开连续对话", "进入连续对话", "开启连续对话", "持续对话模式", "连续对话模式"],
+      "keepAliveExitKeywords": ["退出持续对话", "退出连续对话", "关闭持续对话", "关闭连续对话", "退出持续对话模式", "退出连续对话模式", "关闭持续对话模式", "关闭连续对话模式", "再见"]
     }
   }
 }
@@ -184,8 +187,8 @@ openclaw gateway restart
 
 | 功能 | 默认关键词 |
 | --- | --- |
-| 进入持续对话 | "打开连续对话"、"进入持续对话"、"开启持续对话"、"持续对话模式" |
-| 退出持续对话 | "关闭连续对话"、"退出持续对话"、"退出持续对话模式"、"再见" |
+| 进入持续对话 | "打开持续对话"、"进入持续对话"、"开启持续对话"、"打开连续对话"、"进入连续对话"、"开启连续对话"、"持续对话模式"、"连续对话模式" |
+| 退出持续对话 | "退出持续对话"、"退出连续对话"、"关闭持续对话"、"关闭连续对话"、"退出持续对话模式"、"退出连续对话模式"、"关闭持续对话模式"、"关闭连续对话模式"、"再见" |
 
 **工作原理**：
 
@@ -415,9 +418,9 @@ docker logs openclaw --tail 200
 
 如果不确定设备名称，可以：
 
-1. 开启 `debug: true` 配置
-2. 启动服务查看设备列表
-3. 日志中会打印所有可用设备
+1. 启动服务查看日志中的设备列表
+2. 日志中会打印所有可用设备
+3. 使用 `docker logs openclaw 2>&1 | grep -i "设备\|device"` 查看
 
 ## 使用技能
 
@@ -473,7 +476,7 @@ docker logs openclaw --tail 10 | grep -i "invalid config"
 **解决**:
 
 1. 检查设备名称是否与米家 App 中完全一致
-2. 开启 `debug: true` 查看可用设备列表
+2. 查看启动日志中的可用设备列表：`docker logs openclaw 2>&1 | grep -i "设备\|device"`
 3. 注意错别字，如「音响」vs「音箱」
 
 ### 消息轮询失败
@@ -494,8 +497,8 @@ migpt-claw/
 ├── setup-entry.ts           # 轻量级 Setup 入口（onboarding/config repair）
 ├── openclaw.plugin.json     # 插件清单（marketplace 发现+配置 schema）
 ├── src/
-│   ├── channel.ts          # Channel 核心
-│   ├── service.ts          # 认证服务
+│   ├── channel.ts          # Channel 核心（消息处理、智能分流、持续对话）
+│   ├── service.ts          # 认证服务（MiNA/MIoT 统一接口）
 │   ├── message.ts          # 消息轮询
 │   ├── speaker.ts          # TTS 播放（支持 MiMo + 原生）
 │   ├── config.ts           # 配置解析
@@ -503,19 +506,23 @@ migpt-claw/
 │   ├── outbound.ts         # 消息发送
 │   ├── onboarding.ts       # 安装向导
 │   ├── runtime.ts          # 运行时管理
+│   ├── openclaw-plugin-sdk.d.ts  # OpenClaw SDK 类型定义
 │   ├── tts/                # 自定义 TTS
 │   │   └── mimo.ts        # MiMo-V2.5-TT 语音合成
 │   ├── mi/                 # 小米服务
+│   │   ├── index.ts       # 服务导出
 │   │   ├── mina.ts        # MiNA API
 │   │   ├── miot.ts        # MIoT API
 │   │   ├── account.ts     # 账号认证
 │   │   ├── common.ts      # 通用工具
 │   │   └── typing.ts      # 类型定义
 │   └── utils/              # 工具函数
+│       ├── index.ts       # 工具导出
 │       ├── http.ts        # HTTP 请求
 │       ├── codec.ts       # 编解码
 │       ├── hash.ts        # 哈希工具
 │       ├── io.ts          # 文件 IO
+│       ├── debug.ts       # 调试工具
 │       └── parse.ts       # 解析工具
 └── skills/
     └── migpt-volume/       # 音量控制技能
