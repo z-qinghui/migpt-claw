@@ -37,13 +37,13 @@ openclaw plugins install ~/.openclaw/plugins/migpt-claw --link
 openclaw plugins install "git:github.com/z-qinghui/migpt-claw@main"
 ```
 
-#### 方式三：通过 npm 安装（暂不支持）
+#### 方式三：通过 npm 安装
 
 ```bash
 openclaw plugins install npm:@z-qinghui/migpt-claw
 ```
 
-#### 方式四：通过 ClawHub 插件市场安装（暂不支持）
+#### 方式四：通过 ClawHub 插件市场安装
 
 ```bash
 openclaw plugins install clawhub:@z-qinghui/migpt-claw
@@ -592,6 +592,37 @@ npm run build
 openclaw plugins install . --link
 openclaw gateway restart
 ```
+
+### 发布到 npm
+
+前置条件：拥有 `@z-qinghui` 组织的 npm 发布权限。
+
+```bash
+# 1. 构建
+npm run build
+
+# 2. 登录 npm（如未登录）
+npm login
+
+# 3. 发布（scoped 包自动使用 public 访问权限）
+npm publish
+
+# 4. 验证
+npm view @z-qinghui/migpt-claw
+```
+
+发布后，用户即可通过 `openclaw plugins install npm:@z-qinghui/migpt-claw` 安装。
+
+### 注册到 ClawHub
+
+ClawHub 插件市场会自动索引 npm 上的 OpenClaw 插件。npm 发布完成后：
+
+1. 确保 `openclaw.plugin.json` 中的 `version` 与 npm 包版本一致
+2. ClawHub 会自动检测到新版本（通常需要几分钟同步）
+3. 用户即可通过 `openclaw plugins install clawhub:@z-qinghui/migpt-claw` 安装
+
+> 如 ClawHub 未自动索引，可在 OpenClaw 社区提交插件注册申请。
+> 插件市场发现依赖 `package.json` 中的 `openclaw` 元数据和 `openclaw.plugin.json` 插件清单，这两项均已配置完成。
 
 ## 相关项目
 

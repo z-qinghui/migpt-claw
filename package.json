@@ -1,6 +1,9 @@
 {
   "version": "1.0.0",
-  "name": "migpt-claw",
+  "name": "@z-qinghui/migpt-claw",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "小米小爱音箱 OpenClaw Channel 插件",
   "keywords": [
     "openclaw",
@@ -13,7 +16,9 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "prepublishOnly": "npm run build",
+    "prepack": "npm run build"
   },
   "files": [
     "dist",
