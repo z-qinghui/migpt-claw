@@ -228,10 +228,8 @@ const miGPTPlugin = {
               log?.info(`[migpt:${account.accountId}] Received message from ${deviceName}: ${msg.text.slice(0, 50)}...`);
               if (enterKeywords.some((kw) => msg.text.includes(kw))) {
                 enterKeepAlive();
-                const enterResult = await MiSpeaker.play({ text: "\u5DF2\u8FDB\u5165\u6301\u7EED\u5BF9\u8BDD\u6A21\u5F0F" });
-                const waitMs = enterResult.duration ? Math.ceil(enterResult.duration * 1e3) + 200 : 4e3;
-                log?.info(`[migpt:${account.accountId}] \u7B49\u5F85\u97F3\u9891\u64AD\u653E\u5B8C\u6210: ${waitMs}ms`);
-                await sleep(waitMs);
+                await MiSpeaker.play({ text: "\u5DF2\u8FDB\u5165\u6301\u7EED\u5BF9\u8BDD\u6A21\u5F0F" });
+                // speaker.play 内部已等待音频播完，直接 wakeUp
                 await MiService.wakeUp();
                 log?.info(`[migpt:${account.accountId}] \u6301\u7EED\u5BF9\u8BDD\uFF1A\u5DF2\u5524\u9192\u97F3\u7BB1\u7B49\u5F85\u4E0B\u4E00\u53E5`);
                 continue;
@@ -286,7 +284,9 @@ const miGPTPlugin = {
                 continue;
               }
               try {
+                log?.info(`[migpt:${account.accountId}] 收到消息，立即押敱原生回复`);
                 await MiSpeaker.pause();
+                log?.info(`[migpt:${account.accountId}] 原生回复已抑制`);
               } catch {
               }
               if (keepAlive) {
@@ -299,8 +299,9 @@ const miGPTPlugin = {
                 direction: "inbound"
               });
               const fromAddress = `migpt:${deviceName}`;
-              const toAddress = `migpt:${account.accountId}`;
-              const sessionKey = `${account.accountId}:${deviceName}`;
+              const _resolvedAccountId = account.accountId ?? "default";
+              const toAddress = `migpt:${_resolvedAccountId}`;
+              const sessionKey = `agent:migpt:${_resolvedAccountId}:${deviceName}`;
               const systemPrompts = [];
               if (account.config.systemPrompt) {
                 systemPrompts.push(account.config.systemPrompt);
@@ -378,9 +379,7 @@ ${msg.text}`;
                         log?.info(`[migpt:${account.accountId}] AI \u56DE\u590D\u5305\u542B\u9000\u51FA\u5173\u952E\u8BCD\uFF0C\u9000\u51FA\u6301\u7EED\u5BF9\u8BDD`);
                       }
                       if (keepAlive) {
-                        const waitMs = playResult.duration ? Math.ceil(playResult.duration * 1e3) + 200 : 2e3;
-                        log?.info(`[migpt:${account.accountId}] \u7B49\u5F85\u97F3\u9891\u64AD\u653E\u5B8C\u6210: ${waitMs}ms`);
-                        await sleep(waitMs);
+                        // speaker.play 内部已等待音频播完，直接 wakeUp 无需再 sleep
                         await MiService.wakeUp();
                         log?.info(`[migpt:${account.accountId}] \u6301\u7EED\u5BF9\u8BDD\uFF1A\u5DF2\u5524\u9192\u97F3\u7BB1\u7B49\u5F85\u4E0B\u4E00\u53E5`);
                       }

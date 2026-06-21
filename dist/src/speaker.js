@@ -23,6 +23,8 @@ function getHostLANIP() {
 class _MiSpeaker {
   /** MiMo TTS 实例（延迟注入） */
   _mimoTTS = null;
+  /** 串行播放队列，确保多段文本按顺序播放，不互相打断 */
+  _playQueue = Promise.resolve();
   /**
    * 注入 MiMo TTS 提供者（自动清理旧实例，防止端口泄漏）
    */
@@ -50,6 +52,11 @@ class _MiSpeaker {
    * 优先使用 MiMo TTS（如果已配置），否则回退到小米原生 TTS
    */
   async play(options) {
+    // 加入串行队列，等上一条播完再开始
+    const result = await (this._playQueue = this._playQueue.then(() => this._playInternal(options)));
+    return result;
+  }
+  async _playInternal(options) {
     const { text, url } = options;
     console.log(`\u{1F50A} Speaker.play called: text=${text?.slice(0, 50)}..., url=${url}`);
     if (!MiService.MiNA && !MiService.MiOT) {
@@ -76,6 +83,12 @@ class _MiSpeaker {
             const duration = ttsResult.duration;
             result = await MiService.MiNA.play({ url: externalUrl });
             console.log(`\u{1F50A} MiMo TTS play result: ${result}`);
+            // 等待音频实际播放完毕，再允许下一条进队列
+            if (duration && result) {
+              const waitMs = Math.ceil(duration * 1000) + 300;
+              console.log(`\u{1F50A} 等待音频播完: ${waitMs}ms`);
+              await new Promise(resolve => setTimeout(resolve, waitMs));
+            }
             return { success: result, duration };
           } else {
             console.warn("\u26A0\uFE0F MiMo TTS \u5931\u8D25\uFF0C\u56DE\u9000\u5230\u539F\u751F TTS:", ttsResult.error);
@@ -103,8 +116,9 @@ class _MiSpeaker {
    */
   async _suppressBeforeCustomTTS() {
     if (MiService.MiNA) {
-      await MiService.MiNA.pause().catch(() => {
-      });
+      console.log("\u{1F50A} [抑制] TTS 播放前 pause 原生音笜");
+      await MiService.MiNA.pause().catch(() => {});
+      console.log("\u{1F50A} [抑制] pause 完成");
     }
   }
   /**

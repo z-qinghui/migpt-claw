@@ -532,6 +532,17 @@ migpt-claw/
 
 ## 更新日志
 
+### 2026-06-22
+
+**修复**：
+- 🐛 **TTS 串行队列**：`MiSpeaker` 新增 `_playQueue` promise chain，多段文本（如长故事分块）严格按顺序播放，不再互相打断
+- 🐛 **双等待 bug**：`speaker.js` 内部已在 `_playInternal` 等待音频播完（`duration * 1000 + 300ms`），移除 `channel.js` deliver 回调和 `enterKeywords` 路径的冗余 `sleep(waitMs)`，消除 wakeUp 延迟 = 2×duration 的问题
+- 🐛 **原生抑制日志**：`channel.js` 和 `speaker.js` 各加一行日志，确认 `MiSpeaker.pause()` 实际触发及完成时机，便于排查原生抢答
+
+**优化**：
+- ⚡ **heartbeat 200ms**：消息轮询间隔从 500ms 缩短至 200ms，持续对话响应更及时（云端写入延迟约 300-800ms，低于此值无收益）
+- ⚡ **sessionKey 规范化**：`channel.js` 统一使用 `account.accountId ?? "default"` 处理 undefined，sessionKey 格式固定为 `agent:migpt:{accountId}:{deviceName}`
+
 ### 2026-06-21
 
 **新增**：
