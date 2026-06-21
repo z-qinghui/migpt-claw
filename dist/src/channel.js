@@ -160,6 +160,7 @@ const miGPTPlugin = {
       }
       const mimoConfig = cfg.channels?.migpt?.mimo;
       if (mimoConfig?.apiKey) {
+        await MiSpeaker.cleanupMiMoTTS();
         const mimoTTS = new MiMoTTS({
           apiKey: mimoConfig.apiKey,
           baseUrl: mimoConfig.baseUrl,
@@ -171,7 +172,7 @@ const miGPTPlugin = {
           host: mimoConfig.host
         });
         await mimoTTS.init();
-        MiSpeaker.setMiMoTTS(mimoTTS);
+        await MiSpeaker.setMiMoTTS(mimoTTS);
         log?.info(`[migpt:${account.accountId}] MiMo TTS \u5DF2\u542F\u7528 (server: ${mimoTTS.serverUrl})`);
       }
       const keepAliveTimeout = cfg.channels?.migpt?.keepAliveTimeout ?? 30;
@@ -227,8 +228,8 @@ const miGPTPlugin = {
               log?.info(`[migpt:${account.accountId}] Received message from ${deviceName}: ${msg.text.slice(0, 50)}...`);
               if (enterKeywords.some((kw) => msg.text.includes(kw))) {
                 enterKeepAlive();
-                const enterResult = await MiSpeaker.play({ text: "\u5DF2\u8FDB\u5165\u6301\u7EED\u5BF9\u8BDD\u6A21\u5F0F\uFF0C\u8BF4\u5B8C\u540E\u6211\u4F1A\u81EA\u52A8\u7EE7\u7EED\u542C" });
-                const waitMs = enterResult.duration ? Math.ceil(enterResult.duration * 1e3) + 500 : 4e3;
+                const enterResult = await MiSpeaker.play({ text: "\u5DF2\u8FDB\u5165\u6301\u7EED\u5BF9\u8BDD\u6A21\u5F0F" });
+                const waitMs = enterResult.duration ? Math.ceil(enterResult.duration * 1e3) + 200 : 4e3;
                 log?.info(`[migpt:${account.accountId}] \u7B49\u5F85\u97F3\u9891\u64AD\u653E\u5B8C\u6210: ${waitMs}ms`);
                 await sleep(waitMs);
                 await MiService.wakeUp();
@@ -238,6 +239,60 @@ const miGPTPlugin = {
               if (exitKeywords.some((kw) => msg.text.includes(kw))) {
                 exitKeepAlive();
                 await MiSpeaker.play({ text: "\u5DF2\u9000\u51FA\u6301\u7EED\u5BF9\u8BDD\u6A21\u5F0F" });
+                continue;
+              }
+              const keepAliveKeywords = [...enterKeywords, ...exitKeywords];
+              if (keepAliveKeywords.some((kw) => msg.text.includes(kw))) {
+                log?.info(`[migpt:${account.accountId}] \u8C41\u514D\u6301\u7EED\u5BF9\u8BDD\u6307\u4EE4: ${msg.text.slice(0, 30)}...`);
+                continue;
+              }
+              const hardwareControlVerbs = cfg.channels?.migpt?.hardwareControlVerbs ?? [
+                "\u64AD\u653E",
+                "\u6253\u5F00",
+                "\u5173\u95ED",
+                "\u6682\u505C",
+                "\u7EE7\u7EED",
+                "\u505C\u6B62",
+                "\u5207\u6362",
+                "\u5F00\u542F",
+                "\u5173\u6389",
+                "\u5F00",
+                "\u5173",
+                "\u542F\u52A8",
+                "\u8C03\u8282",
+                "\u8C03\u9AD8",
+                "\u8C03\u4F4E",
+                "\u8C03\u5927",
+                "\u8C03\u5C0F",
+                "\u8C03\u4EAE",
+                "\u8C03\u6697",
+                "\u589E\u5927",
+                "\u51CF\u5C0F",
+                "\u8BBE\u7F6E",
+                "\u8C03\u5230",
+                "\u5BFC\u822A",
+                "\u62E8\u6253",
+                "\u6253\u7535\u8BDD",
+                "\u547C\u53EB",
+                "\u53D1\u77ED\u4FE1",
+                "\u53D1\u6D88\u606F",
+                "\u91CD\u542F",
+                "\u5173\u673A",
+                "\u5347\u7EA7",
+                "\u66F4\u65B0",
+                "\u6062\u590D\u51FA\u5382",
+                "\u67E5\u8BE2",
+                "\u67E5\u770B",
+                "\u544A\u8BC9\u6211",
+                "\u8BF4\u4E00\u4E0B",
+                "\u64AD\u62A5"
+              ];
+              const hardwareControlPattern = new RegExp(
+                `^((${hardwareControlVerbs.join("|")})|.+(${hardwareControlVerbs.join("|")})).+`
+              );
+              const isHardwareControl = hardwareControlPattern.test(msg.text.trim());
+              if (isHardwareControl) {
+                log?.info(`[migpt:${account.accountId}] \u8DF3\u8FC7\u786C\u4EF6\u63A7\u5236\u6307\u4EE4: ${msg.text.slice(0, 30)}...`);
                 continue;
               }
               try {
@@ -281,26 +336,7 @@ const miGPTPlugin = {
                 OriginatingChannel: "migpt",
                 envelopeOptions
               });
-              const DEFAULT_SPEAKER_PROMPT = `\u3010\u97F3\u7BB1\u64AD\u62A5\u89C4\u8303 - \u5FC5\u987B\u9075\u5B88\u3011
-\u4F60\u662F\u4E00\u4E2A\u667A\u80FD\u97F3\u7BB1\u52A9\u624B\uFF0C\u901A\u8FC7\u8BED\u97F3\u4E0E\u7528\u6237\u4EA4\u6D41\u3002\u8BF7\u9075\u5B88\u4EE5\u4E0B\u89C4\u8303\uFF1A
-
-\u{1F4E2} \u64AD\u62A5\u539F\u5219\uFF1A
-1. \u7B80\u77ED\u4F18\u5148\uFF1A\u5355\u6B21\u64AD\u62A5\u63A7\u5236\u5728 100 \u5B57\u4EE5\u5185\uFF0C\u8D85\u8FC7\u8BF7\u62C6\u5206\u6216\u6539\u7528\u5176\u4ED6\u6E20\u9053
-2. \u7EAF\u6587\u5B57\uFF1A\u53EA\u8F93\u51FA\u9002\u5408\u8BED\u97F3\u64AD\u62A5\u7684\u7EAF\u6587\u5B57\uFF0C\u4E0D\u8981\u5305\u542B URL\u3001\u4EE3\u7801\u3001\u590D\u6742\u683C\u5F0F
-3. \u81EA\u7136\u53E3\u8BED\uFF1A\u4F7F\u7528\u7B80\u77ED\u3001\u6E05\u6670\u7684\u53E3\u8BED\u8868\u8FBE\uFF0C\u907F\u514D\u957F\u53E5\u548C\u590D\u6742\u7ED3\u6784
-
-\u{1F6AB} \u4E0D\u9002\u5408\u64AD\u62A5\u7684\u5185\u5BB9\uFF08\u5E94\u6539\u7528\u5176\u4ED6\u6E20\u9053\uFF09\uFF1A
-- \u4EE3\u7801\u7247\u6BB5\u3001\u6280\u672F\u6587\u6863
-- \u957F\u7BC7\u6587\u7AE0\u3001\u62A5\u544A\uFF08>300 \u5B57\uFF09
-- \u590D\u6742\u6570\u636E\u8868\u683C\u3001\u5217\u8868
-- \u56FE\u7247\u3001\u89C6\u9891\u3001\u6587\u4EF6\u7B49\u591A\u5A92\u4F53\u5185\u5BB9
-- URL \u94FE\u63A5\u3001\u90AE\u7BB1\u5730\u5740
-
-\u2705 \u6B63\u786E\u505A\u6CD5\u793A\u4F8B\uFF1A
-- \u77ED\u56DE\u590D\uFF1A"\u597D\u7684\uFF0C\u5DF2\u4E3A\u4F60\u8BBE\u7F6E\u660E\u5929\u65E9\u4E0A 8 \u70B9\u7684\u95F9\u949F"
-- \u957F\u5185\u5BB9\u5206\u6D41\uFF1A"\u7531\u4E8E\u5185\u5BB9\u8F83\u957F\uFF0C\u8BE6\u7EC6\u62A5\u544A\u5DF2\u53D1\u9001\u5230\u4F60\u7684\u624B\u673A/\u5FAE\u4FE1\uFF0C\u8BF7\u67E5\u770B"
-- \u4EE3\u7801\u573A\u666F\uFF1A"\u4EE3\u7801\u5DF2\u751F\u6210\u5E76\u53D1\u9001\u5230\u4F60\u7684\u90AE\u7BB1\uFF0C\u8BF7\u6CE8\u610F\u67E5\u6536"
-- \u591A\u5A92\u4F53\u573A\u666F\uFF1A"\u8FD9\u5F20\u56FE\u7247\u5F88\u6709\u8DA3\uFF0C\u5DF2\u53D1\u9001\u5230\u4F60\u7684\u624B\u673A\u67E5\u770B"`;
+              const DEFAULT_SPEAKER_PROMPT = `\u4F60\u662F\u5C0F\u7C73\u667A\u80FD\u97F3\u7BB1\u52A9\u624B\uFF0C\u7528\u7B80\u77ED\u53E3\u8BED\u56DE\u590D\u3002\u89C4\u5219\uFF1A\u666E\u901A\u5BF9\u8BDD\u56DE\u590D 50 \u5B57\u4EE5\u5185\uFF0C\u8BB2\u6545\u4E8B\u6216\u67E5\u8D44\u6599\u53EF\u4EE5\u9002\u5F53\u653E\u5BBD\u9650\u5236\u4E0D\u8D85\u8FC7 200 \u5B57\uFF1B\u4E0D\u7528 URL/\u4EE3\u7801/emoji/markdown \u683C\u5F0F\u3002`;
               const contextInfo = `\u4F60\u6B63\u5728\u901A\u8FC7\u5C0F\u7C73\u97F3\u7BB1\u4E0E\u7528\u6237\u5BF9\u8BDD\u3002
 
 \u3010\u4F1A\u8BDD\u4E0A\u4E0B\u6587\u3011
@@ -346,8 +382,13 @@ ${msg.text}`;
                     log?.info(`[migpt:${account.accountId}] deliver called, kind: ${info.kind}`);
                     if (payload.text) {
                       const playResult = await MiSpeaker.play({ text: payload.text });
+                      const exitKeywordsInReply = ["\u9000\u51FA", "\u5173\u95ED", "\u518D\u89C1", "\u5DF2\u9000\u51FA", "\u5DF2\u5173\u95ED"];
+                      if (exitKeywordsInReply.some((kw) => payload.text.includes(kw))) {
+                        exitKeepAlive();
+                        log?.info(`[migpt:${account.accountId}] AI \u56DE\u590D\u5305\u542B\u9000\u51FA\u5173\u952E\u8BCD\uFF0C\u9000\u51FA\u6301\u7EED\u5BF9\u8BDD`);
+                      }
                       if (keepAlive) {
-                        const waitMs = playResult.duration ? Math.ceil(playResult.duration * 1e3) + 500 : 2e3;
+                        const waitMs = playResult.duration ? Math.ceil(playResult.duration * 1e3) + 200 : 2e3;
                         log?.info(`[migpt:${account.accountId}] \u7B49\u5F85\u97F3\u9891\u64AD\u653E\u5B8C\u6210: ${waitMs}ms`);
                         await sleep(waitMs);
                         await MiService.wakeUp();

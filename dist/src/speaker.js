@@ -24,10 +24,26 @@ class _MiSpeaker {
   /** MiMo TTS 实例（延迟注入） */
   _mimoTTS = null;
   /**
-   * 注入 MiMo TTS 提供者
+   * 注入 MiMo TTS 提供者（自动清理旧实例，防止端口泄漏）
    */
-  setMiMoTTS(tts) {
+  async setMiMoTTS(tts) {
+    if (this._mimoTTS) {
+      console.log("\u{1F50A} \u6E05\u7406\u65E7 MiMo TTS \u5B9E\u4F8B...");
+      await this._mimoTTS.destroy().catch(() => {
+      });
+    }
     this._mimoTTS = tts;
+  }
+  /**
+   * 清理 MiMo TTS 资源（释放端口和临时文件）
+   */
+  async cleanupMiMoTTS() {
+    if (this._mimoTTS) {
+      console.log("\u{1F50A} \u6E05\u7406 MiMo TTS \u8D44\u6E90...");
+      await this._mimoTTS.destroy().catch(() => {
+      });
+      this._mimoTTS = null;
+    }
   }
   /**
    * 播放文字、音频链接
@@ -57,11 +73,10 @@ class _MiSpeaker {
             const hostIP = getHostLANIP();
             const externalUrl = ttsResult.url.replace(/0\.0\.0\.0|127\.0\.0\.1|localhost/g, hostIP);
             console.log(`\u{1F50A} MiMo TTS \u64AD\u653E: ${externalUrl} (\u65F6\u957F: ${ttsResult.duration?.toFixed(1)}s)`);
+            const duration = ttsResult.duration;
             result = await MiService.MiNA.play({ url: externalUrl });
             console.log(`\u{1F50A} MiMo TTS play result: ${result}`);
-            if (result) {
-              return { success: true, duration: ttsResult.duration };
-            }
+            return { success: result, duration };
           } else {
             console.warn("\u26A0\uFE0F MiMo TTS \u5931\u8D25\uFF0C\u56DE\u9000\u5230\u539F\u751F TTS:", ttsResult.error);
             result = await MiService.play(text);

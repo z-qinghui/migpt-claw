@@ -54,10 +54,26 @@ class _MiSpeaker {
   private _mimoTTS: MiMoTTS | null = null;
 
   /**
-   * 注入 MiMo TTS 提供者
+   * 注入 MiMo TTS 提供者（自动清理旧实例，防止端口泄漏）
    */
-  setMiMoTTS(tts: MiMoTTS) {
+  async setMiMoTTS(tts: MiMoTTS) {
+    // 清理旧实例，释放端口
+    if (this._mimoTTS) {
+      console.log('🔊 清理旧 MiMo TTS 实例...');
+      await this._mimoTTS.destroy().catch(() => {});
+    }
     this._mimoTTS = tts;
+  }
+
+  /**
+   * 清理 MiMo TTS 资源（释放端口和临时文件）
+   */
+  async cleanupMiMoTTS() {
+    if (this._mimoTTS) {
+      console.log('🔊 清理 MiMo TTS 资源...');
+      await this._mimoTTS.destroy().catch(() => {});
+      this._mimoTTS = null;
+    }
   }
 
   /**
@@ -93,11 +109,11 @@ class _MiSpeaker {
             const hostIP = getHostLANIP();
             const externalUrl = ttsResult.url.replace(/0\.0\.0\.0|127\.0\.0\.1|localhost/g, hostIP);
             console.log(`🔊 MiMo TTS 播放: ${externalUrl} (时长: ${ttsResult.duration?.toFixed(1)}s)`);
+            const duration = ttsResult.duration;  // 保存 duration
             result = await MiService.MiNA!.play({ url: externalUrl });
             console.log(`🔊 MiMo TTS play result: ${result}`);
-            if (result) {
-              return { success: true, duration: ttsResult.duration };
-            }
+            // 无论播放是否成功，都返回 duration
+            return { success: result, duration };
           } else {
             console.warn('⚠️ MiMo TTS 失败，回退到原生 TTS:', ttsResult.error);
             result = await MiService.play(text);

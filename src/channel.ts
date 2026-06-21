@@ -185,6 +185,9 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
       // ============ MiMo TTS 初始化（如果配置了） ============
       const mimoConfig = (cfg as any).channels?.migpt?.mimo;
       if (mimoConfig?.apiKey) {
+        // 清理旧实例，防止端口泄漏
+        await MiSpeaker.cleanupMiMoTTS();
+
         const mimoTTS = new MiMoTTS({
           apiKey: mimoConfig.apiKey,
           baseUrl: mimoConfig.baseUrl,
@@ -196,7 +199,7 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
           host: mimoConfig.host,
         });
         await mimoTTS.init();
-        MiSpeaker.setMiMoTTS(mimoTTS);
+        await MiSpeaker.setMiMoTTS(mimoTTS);
         log?.info(`[migpt:${account.accountId}] MiMo TTS 已启用 (server: ${mimoTTS.serverUrl})`);
       }
 
@@ -283,9 +286,9 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
               // ============ 持续对话关键词检测 ============
               if (enterKeywords.some(kw => msg.text.includes(kw))) {
                 enterKeepAlive();
-                const enterResult = await MiSpeaker.play({ text: '已进入持续对话模式，说完后我会自动继续听' });
-                // 等音频播完再唤醒（额外加 0.5s 缓冲）
-                const waitMs = enterResult.duration ? Math.ceil(enterResult.duration * 1000) + 500 : 4000;
+                const enterResult = await MiSpeaker.play({ text: '已进入持续对话模式' });
+                // 等音频播放完成后再唤醒，确保语音完整播放
+                const waitMs = enterResult.duration ? Math.ceil(enterResult.duration * 1000) + 200 : 4000;
                 log?.info(`[migpt:${account.accountId}] 等待音频播放完成: ${waitMs}ms`);
                 await sleep(waitMs);
                 await MiService.wakeUp();
@@ -295,6 +298,39 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
               if (exitKeywords.some(kw => msg.text.includes(kw))) {
                 exitKeepAlive();
                 await MiSpeaker.play({ text: '已退出持续对话模式' });
+                continue;
+              }
+
+              // ============ 硬件控制指令过滤 ============
+              // 这些指令应该由小爱原生处理，不发送给 openclaw
+              
+              // 豁免：持续对话控制指令
+              const keepAliveKeywords = [...enterKeywords, ...exitKeywords];
+              if (keepAliveKeywords.some(kw => msg.text.includes(kw))) {
+                log?.info(`[migpt:${account.accountId}] 豁免持续对话指令: ${msg.text.slice(0, 30)}...`);
+                continue;
+              }
+              
+              // 从配置读取硬件控制动词关键词，默认值包含常见动词
+              const hardwareControlVerbs: string[] = (cfg as any).channels?.migpt?.hardwareControlVerbs ?? [
+                '播放', '打开', '关闭', '暂停', '继续', '停止', '切换',
+                '开启', '关掉', '开', '关', '启动', '调节',
+                '调高', '调低', '调大', '调小', '调亮', '调暗', '增大', '减小', '设置', '调到',
+                '导航', '拨打', '打电话', '呼叫', '发短信', '发消息',
+                '重启', '关机', '升级', '更新', '恢复出厂',
+                '查询', '查看', '告诉我', '说一下', '播报',
+              ];
+              
+              // 构建正则表达式：支持两种模式
+              // 模式1：动词关键词 + 内容（如"打开灯"、"播放音乐"）
+              // 模式2：任意内容 + 动词关键词 + 内容（如"大白调小一些"、"吸顶灯调亮一些"）
+              const hardwareControlPattern = new RegExp(
+                `^((${hardwareControlVerbs.join('|')})|.+(${hardwareControlVerbs.join('|')})).+`
+              );
+              
+              const isHardwareControl = hardwareControlPattern.test(msg.text.trim());
+              if (isHardwareControl) {
+                log?.info(`[migpt:${account.accountId}] 跳过硬件控制指令: ${msg.text.slice(0, 30)}...`);
                 continue;
               }
 
@@ -358,26 +394,7 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
               });
 
               // 默认的音箱场景提示词（如果没有配置 systemPrompt）
-              const DEFAULT_SPEAKER_PROMPT = `【音箱播报规范 - 必须遵守】
-你是一个智能音箱助手，通过语音与用户交流。请遵守以下规范：
-
-📢 播报原则：
-1. 简短优先：单次播报控制在 100 字以内，超过请拆分或改用其他渠道
-2. 纯文字：只输出适合语音播报的纯文字，不要包含 URL、代码、复杂格式
-3. 自然口语：使用简短、清晰的口语表达，避免长句和复杂结构
-
-🚫 不适合播报的内容（应改用其他渠道）：
-- 代码片段、技术文档
-- 长篇文章、报告（>300 字）
-- 复杂数据表格、列表
-- 图片、视频、文件等多媒体内容
-- URL 链接、邮箱地址
-
-✅ 正确做法示例：
-- 短回复："好的，已为你设置明天早上 8 点的闹钟"
-- 长内容分流："由于内容较长，详细报告已发送到你的手机/微信，请查看"
-- 代码场景："代码已生成并发送到你的邮箱，请注意查收"
-- 多媒体场景："这张图片很有趣，已发送到你的手机查看"`;
+              const DEFAULT_SPEAKER_PROMPT = `你是小米智能音箱助手，用简短口语回复。规则：普通对话回复 50 字以内，讲故事或查资料可以适当放宽限制不超过 200 字；不用 URL/代码/emoji/markdown 格式。`;
 
               // 构建 AI 看到的完整上下文
               const contextInfo = `你正在通过小米音箱与用户对话。
@@ -426,10 +443,17 @@ export const miGPTPlugin: ChannelPlugin<ResolvedMiAccount> = {
                     if (payload.text) {
                       const playResult = await MiSpeaker.play({ text: payload.text });
 
+                      // ============ 检测 AI 回复是否包含退出关键词 ============
+                      const exitKeywordsInReply = ['退出', '关闭', '再见', '已退出', '已关闭'];
+                      if (exitKeywordsInReply.some(kw => payload.text!.includes(kw))) {
+                        exitKeepAlive();
+                        log?.info(`[migpt:${account.accountId}] AI 回复包含退出关键词，退出持续对话`);
+                      }
+
                       // ============ 持续对话：AI 回复后重新唤醒音箱 ============
                       if (keepAlive) {
-                        // 等音频播完再唤醒（额外加 0.5s 缓冲）
-                        const waitMs = playResult.duration ? Math.ceil(playResult.duration * 1000) + 500 : 2000;
+                        // 等音频播放完成后再唤醒，确保语音完整播放
+                        const waitMs = playResult.duration ? Math.ceil(playResult.duration * 1000) + 200 : 2000;
                         log?.info(`[migpt:${account.accountId}] 等待音频播放完成: ${waitMs}ms`);
                         await sleep(waitMs);
                         await MiService.wakeUp();

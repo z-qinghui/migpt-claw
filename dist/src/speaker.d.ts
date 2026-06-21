@@ -14,9 +14,13 @@ declare class _MiSpeaker {
     /** MiMo TTS 实例（延迟注入） */
     private _mimoTTS;
     /**
-     * 注入 MiMo TTS 提供者
+     * 注入 MiMo TTS 提供者（自动清理旧实例，防止端口泄漏）
      */
-    setMiMoTTS(tts: MiMoTTS): void;
+    setMiMoTTS(tts: MiMoTTS): Promise<void>;
+    /**
+     * 清理 MiMo TTS 资源（释放端口和临时文件）
+     */
+    cleanupMiMoTTS(): Promise<void>;
     /**
      * 播放文字、音频链接
      * 优先使用 MiMo TTS（如果已配置），否则回退到小米原生 TTS
