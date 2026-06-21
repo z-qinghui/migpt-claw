@@ -275,17 +275,7 @@ const miGPTPlugin = {
                 "\u6253\u7535\u8BDD",
                 "\u547C\u53EB",
                 "\u53D1\u77ED\u4FE1",
-                "\u53D1\u6D88\u606F",
-                "\u91CD\u542F",
-                "\u5173\u673A",
-                "\u5347\u7EA7",
-                "\u66F4\u65B0",
-                "\u6062\u590D\u51FA\u5382",
-                "\u67E5\u8BE2",
-                "\u67E5\u770B",
-                "\u544A\u8BC9\u6211",
-                "\u8BF4\u4E00\u4E0B",
-                "\u64AD\u62A5"
+                "\u53D1\u6D88\u606F"
               ];
               const hardwareControlPattern = new RegExp(
                 `^((${hardwareControlVerbs.join("|")})|.+(${hardwareControlVerbs.join("|")})).+`
